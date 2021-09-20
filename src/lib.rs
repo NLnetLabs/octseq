@@ -1,21 +1,19 @@
 //! Variable length octet sequences.
 //!
-//! This module provides the basic traits that allow defining types that are
-//! generic over a variable length sequence of octets. It implements these
-//! traits for most comonly used types of such sequences and provides a few
-//! additional types for use in a no-std environment. In addition, it provides
-//! a few types and traits that make it easier to access data contained in
-//! such sequences.
+//! This crate provides a set of basic traits that allow defining types that
+//! are generic over a variable length sequence of octets (or, vulgo: bytes).
+//! It implements these traits for most commonly used types of such sequences
+//! and provides a array-backed type for use in a no-std environment.
+//!
+//! # Types of Octet Sequences
+//!
+//! There are two fundamental types of octet sequences. If a sequence
+//! contains content of a constant size, we call it simply ‘octets.’ If the
+//! sequence is actually a buffer into which octets can be placed, it is
+//! called an `octets builder.`
 //!
 //!
-//! # Traits for Octet Sequences
-//!
-//! There are two fundamental types of octet sequences. If a sequence is of a
-//! given size, we call it simply ‘octets.’ If the sequence is actually a
-//! buffer into which octets can be placed, it is called an `octets builder.`
-//!
-//!
-//! ## Octets and Octets References
+//! # Octets and Octets References
 //!
 //! There is no special trait for octets, we simply use `AsRef<[u8]>` for
 //! imutable octets or `AsMut<[u8]>` if the octets of the sequence can be
@@ -25,28 +23,23 @@
 //! plain `AsRef<[u8]>`.
 //!
 //! A reference to an octets type implements [`OctetsRef`]. The main purpose
-//! of this trait is to allow cheaply taking a sub-sequence, called a ‘range’,
-//! out of the octets. For most types, ranges will be octet slices `&[u8]` but
-//! some shareable types (most notably `bytes::Bytes`) allow ranges to be
-//! owned values, thus avoiding the lifetime limitations a slice would
-//! bring.
+//! of this trait is to allow taking a sub-sequence, called a ‘range’,
+//! out of the octets in the cheapest way possible. For most types, ranges
+//! will be octet slices `&[u8]` but some shareable types (most notably
+//! `bytes::Bytes`) allow ranges to be owned values, thus avoiding the
+//! lifetime limitations a slice would bring.
 //!
 //! One type is special in that it is its own octets reference: `&[u8]`,
-//! referred to as an octets slice in the documentation. This means that you
+//! referred to as an _octets slice_ here. This means that you
 //! always use an octets slice irregardless whether a type is generic over
-//! an octets sequence or an octets reference. Because an octets slice is
-//! also a useful basis when only looking at some value without planning on
-//! keeping any ranges from it, most generic types provide a method
-//! `for_slice` that converts the value from whatever octets type it is
-//! currently generic over into an identical value atop a octets slice of
-//! that sequence.
+//! an octets sequence or an octets reference.
 //!
-//! The trait is separate because of limitations of lifetimes in traits. It
-//! has an associated type `OctetsRef::Range` that defines the type of a
-//! range. When using the trait as a trait bound for a generic type, you will
-//! typically bound a reference to this type. For instance, a generic function
-//! taking part out of some octets and returning a reference to it could be
-//! defined like so:
+//! The [`OctetsRef`] trait is separate because of limitations of lifetimes
+//! in traits. It has an associated type `OctetsRef::Range` that defines the
+//! type of a range. When using the trait as a trait bound for a generic type,
+//! you will typically bound a reference to this type. For instance, a generic
+//! function taking part out of some octets and returning a reference to it
+//! could be defined like so:
 //!
 //! ```
 //! # use octets::OctetsRef;
@@ -65,7 +58,7 @@
 //! necessary to tie all these references together.
 //!
 //!
-//! ## Octets Builders
+//! # Octets Builders
 //!
 //! Octets builders and their [`OctetsBuilder`] trait are comparatively
 //! straightforward. They represent a buffer to which octets can be appended.
@@ -77,7 +70,7 @@
 //! empty builder.
 //!
 //!
-//! ## Conversion Traits
+//! # Conversion Traits
 //!
 //! A series of special traits allows converting octets into octets builder
 //! and vice versa. They pair octets with their natural builders via
@@ -87,11 +80,11 @@
 //! have the same type.
 //!
 //!
-//! ## Using Trait Bounds
+//! # Using Trait Bounds
 //!
 //! When using these traits as bounds for generic types, always limit yourself
 //! to the most loose bounds you can get away with. Not all types holding
-//! octet sequences can actually implement all these traits, so by being to
+//! octet sequences can actually implement all these traits, so by being too
 //! eager you may paint yourself into a corner.
 //!
 //! In many cases you can get away with a simple `AsRef<[u8]>` bound. Only use
@@ -171,6 +164,7 @@ impl<A: smallvec::Array<Item = u8>> OctetsExt for smallvec::SmallVec<A> {
         self.truncate(len)
     }
 }
+
 
 //------------ OctetsRef -----------------------------------------------------
 

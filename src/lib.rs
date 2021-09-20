@@ -97,16 +97,6 @@
 //! In many cases you can get away with a simple `AsRef<[u8]>` bound. Only use
 //! an explicit `OctetsRef` bound when you need to return a range that may be
 //! kept around.
-//!
-//!
-//! # Octet Sequences for `no_std` Use
-//!
-//! When using the crate without an allocator, creating octets sequences can
-//! be difficult. However, since DNS data is often limited in size, you can in
-//! many cases get away with using a octets array as the basis for an octets
-//! sequence. The crate provides a macro [`octets_array!`] to define such a
-//! type for specific array length. The octets module also contains a number
-//! of types defined via that module for typical array sizes.
 
 #![no_std]
 #![allow(renamed_and_removed_lints)]
@@ -118,14 +108,11 @@
 #[macro_use]
 extern crate std;
 
-#[macro_use]
 extern crate core;
 
-#[cfg(feature = "bytes")] use bytes::{Bytes, BytesMut};
-use core::cmp::Ordering;
+use core::{cmp, fmt};
 use core::convert::TryFrom;
-use core::{borrow, fmt, hash};
-#[cfg(feature = "smallvec")] use smallvec::{Array, SmallVec};
+#[cfg(feature = "bytes")] use bytes::{Bytes, BytesMut};
 #[cfg(feature = "std")] use std::borrow::Cow;
 #[cfg(feature = "std")] use std::vec::Vec;
 
@@ -179,7 +166,7 @@ impl OctetsExt for Bytes {
 }
 
 #[cfg(feature = "smallvec")]
-impl<A: Array<Item = u8>> OctetsExt for SmallVec<A> {
+impl<A: smallvec::Array<Item = u8>> OctetsExt for smallvec::SmallVec<A> {
     fn truncate(&mut self, len: usize) {
         self.truncate(len)
     }
@@ -278,7 +265,9 @@ impl<'a> OctetsRef for &'a Bytes {
 }
 
 #[cfg(feature = "smallvec")]
-impl<'a, A: Array<Item = u8>> OctetsRef for &'a SmallVec<A> {
+impl<'a, A: smallvec::Array<Item = u8>>
+    OctetsRef for &'a smallvec::SmallVec<A>
+{
     type Range = &'a [u8];
 
     fn range(self, start: usize, end: usize) -> Self::Range {
@@ -338,7 +327,7 @@ where
 }
 
 #[cfg(features = "smallvec")]
-impl<Source, A> OctetsFrom<Source> for SmallVec<A>
+impl<Source, A> OctetsFrom<Source> for smallvec::SmallVec<A>
 where
     Source: AsRef<u8>,
     A: Array<Item = u8>,
@@ -481,7 +470,7 @@ impl OctetsBuilder for BytesMut {
 }
 
 #[cfg(feature = "smallvec")]
-impl<A: Array<Item = u8>> OctetsBuilder for SmallVec<A> {
+impl<A: smallvec::Array<Item = u8>> OctetsBuilder for smallvec::SmallVec<A> {
     type Octets = Self;
 
     fn append_slice(&mut self, slice: &[u8]) -> Result<(), ShortBuf> {
@@ -490,7 +479,7 @@ impl<A: Array<Item = u8>> OctetsBuilder for SmallVec<A> {
     }
 
     fn truncate(&mut self, len: usize) {
-        SmallVec::truncate(self, len)
+        smallvec::SmallVec::truncate(self, len)
     }
 
     fn freeze(self) -> Self::Octets {
@@ -538,13 +527,13 @@ impl EmptyBuilder for BytesMut {
 }
 
 #[cfg(feature = "smallvec")]
-impl<A: Array<Item = u8>> EmptyBuilder for SmallVec<A> {
+impl<A: smallvec::Array<Item = u8>> EmptyBuilder for smallvec::SmallVec<A> {
     fn empty() -> Self {
-        SmallVec::new()
+        smallvec::SmallVec::new()
     }
 
     fn with_capacity(capacity: usize) -> Self {
-        SmallVec::with_capacity(capacity)
+        smallvec::SmallVec::with_capacity(capacity)
     }
 }
 
@@ -599,7 +588,7 @@ impl IntoBuilder for Bytes {
 }
 
 #[cfg(feature = "smallvec")]
-impl<A: Array<Item = u8>> IntoBuilder for SmallVec<A> {
+impl<A: smallvec::Array<Item = u8>> IntoBuilder for smallvec::SmallVec<A> {
     type Builder = Self;
 
     fn into_builder(self) -> Self::Builder {
@@ -637,7 +626,7 @@ impl FromBuilder for Bytes {
 }
 
 #[cfg(feature = "smallvec")]
-impl<A: Array<Item = u8>> FromBuilder for SmallVec<A> {
+impl<A: smallvec::Array<Item = u8>> FromBuilder for smallvec::SmallVec<A> {
     type Builder = Self;
 
     fn from_builder(builder: Self::Builder) -> Self {
@@ -645,207 +634,223 @@ impl<A: Array<Item = u8>> FromBuilder for SmallVec<A> {
     }
 }
 
-//------------ octets_array --------------------------------------------------
 
-#[macro_export]
-macro_rules! octets_array {
-    ( $vis:vis $name:ident => $len:expr) => {
-        /// A fixed length octet buffer.
-        ///
-        /// The type functions both as an octets sequence and an octets
-        /// builder atop a fixed size bytes array.
-        #[derive(Clone)]
-        $vis struct $name {
-            octets: [u8; $len],
-            len: usize
-        }
+//------------ SmallOctets ---------------------------------------------------
 
-        impl $name {
-            /// Creates a new empty value.
-            pub fn new() -> Self {
-                Default::default()
-            }
+/// A octets vector that doesn’t allocate for small sizes.
+#[cfg(feature = "smallvec")]
+pub type SmallOctets = smallvec::SmallVec<[u8; 24]>;
 
-            /// Returns the contents as an octet slice.
-            pub fn as_slice(&self) -> &[u8] {
-                &self.octets[..self.len]
-            }
 
-            /// Returns the contents as a mutable octet slice.
-            pub fn as_slice_mut(&mut self) -> &mut [u8] {
-                &mut self.octets[..self.len]
-            }
-        }
+//------------ Array ---------------------------------------------------------
 
-        impl Default for $name {
-            fn default() -> Self {
-                $name {
-                    octets: [0; $len],
-                    len: 0
-                }
-            }
-        }
+#[derive(Clone)]
+pub struct Array<const N: usize> {
+    octets: [u8; N],
+    len: usize
+}
 
-        impl<'a> TryFrom<&'a [u8]> for $name {
-            type Error = ShortBuf;
+impl<const N: usize> Array<N> {
+    /// Creates a new empty value.
+    pub fn new() -> Self {
+        Default::default()
+    }
 
-            fn try_from(src: &'a [u8]) -> Result<Self, ShortBuf> {
-                let len = src.len();
-                if len > $len {
-                    Err(ShortBuf)
-                }
-                else {
-                    let mut res = Self::default();
-                    res.octets[..len].copy_from_slice(src);
-                    res.len = len;
-                    Ok(res)
-                }
-            }
-        }
+    /// Returns an octets slice with the content of the array.
+    pub fn as_slice(&self) -> &[u8] {
+        &self.octets[..self.len]
+    }
 
-        impl core::ops::Deref for $name {
-            type Target = [u8];
+    /// Returns a mutable octets slice with the content of the array.
+    pub fn as_slice_mut(&mut self) -> &mut [u8] {
+        &mut self.octets[..self.len]
+    }
+}
 
-            fn deref(&self) -> &[u8] {
-                self.as_slice()
-            }
-        }
 
-        impl core::ops::DerefMut for $name {
-            fn deref_mut(&mut self) -> &mut [u8] {
-                self.as_slice_mut()
-            }
-        }
+//--- Default
 
-        impl AsRef<[u8]> for $name {
-            fn as_ref(&self) -> &[u8] {
-                self.as_slice()
-            }
-        }
-
-        impl AsMut<[u8]> for $name {
-            fn as_mut(&mut self) -> &mut [u8] {
-                self.as_slice_mut()
-            }
-        }
-
-        impl borrow::Borrow<[u8]> for $name {
-            fn borrow(&self) -> &[u8] {
-                self.as_slice()
-            }
-        }
-
-        impl borrow::BorrowMut<[u8]> for $name {
-            fn borrow_mut(&mut self) -> &mut [u8] {
-                self.as_slice_mut()
-            }
-        }
-
-        impl $crate::OctetsBuilder for $name {
-            type Octets = Self;
-
-            fn append_slice(&mut self, slice: &[u8]) -> Result<(), ShortBuf> {
-                if slice.len() > $len - self.len {
-                    Err(ShortBuf)
-                }
-                else {
-                    let end = self.len + slice.len();
-                    self.octets[self.len..end].copy_from_slice(slice);
-                    self.len = end;
-                    Ok(())
-                }
-            }
-
-            fn truncate(&mut self, len: usize) {
-                if len < self.len {
-                    self.len = len
-                }
-            }
-
-            fn freeze(self) -> Self::Octets {
-                self
-            }
-        }
-
-        impl $crate::EmptyBuilder for $name {
-            fn empty() -> Self {
-                $name {
-                    octets: [0; $len],
-                    len: 0
-                }
-            }
-
-            fn with_capacity(_capacity: usize) -> Self {
-                Self::empty()
-            }
-        }
-
-        impl $crate::IntoBuilder for $name {
-            type Builder = Self;
-
-            fn into_builder(self) -> Self::Builder {
-                self
-            }
-        }
-
-        impl $crate::FromBuilder for $name {
-            type Builder = Self;
-
-            fn from_builder(builder: Self::Builder) -> Self {
-                builder
-            }
-        }
-
-        impl<T: AsRef<[u8]>> PartialEq<T> for $name {
-            fn eq(&self, other: &T) -> bool {
-                self.as_slice().eq(other.as_ref())
-            }
-        }
-
-        impl Eq for $name { }
-
-        impl<T: AsRef<[u8]>> PartialOrd<T> for $name {
-            fn partial_cmp(&self, other: &T) -> Option<Ordering> {
-                self.as_slice().partial_cmp(other.as_ref())
-            }
-        }
-
-        impl Ord for $name {
-            fn cmp(&self, other: &Self) -> Ordering {
-                self.as_slice().cmp(other.as_slice())
-            }
-        }
-
-        impl hash::Hash for $name {
-            fn hash<H: hash::Hasher>(&self, state: &mut H) {
-                self.as_slice().hash(state)
-            }
-        }
-
-        impl fmt::Debug for $name {
-            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-                f.debug_tuple(stringify!($name))
-                    .field(&self.as_slice())
-                    .finish()
-            }
+impl<const N: usize> Default for Array<N> {
+    fn default() -> Self {
+        Array {
+            octets: [0; N],
+            len: 0
         }
     }
 }
 
-octets_array!(pub Octets32 => 32);
-octets_array!(pub Octets64 => 64);
-octets_array!(pub Octets128 => 128);
-octets_array!(pub Octets256 => 256);
-octets_array!(pub Octets512 => 512);
-octets_array!(pub Octets1024 => 1024);
-octets_array!(pub Octets2048 => 2048);
-octets_array!(pub Octets4096 => 4096);
 
-//------------ OctetsVec -----------------------------------------------------
+//--- TryFrom
 
-/// A octets vector that doesn’t allocate for small sizes.
-#[cfg(feature = "smallvec")]
-pub type OctetsVec = SmallVec<[u8; 24]>;
+impl<'a, const N: usize> TryFrom<&'a [u8]> for Array<N> {
+    type Error = ShortBuf;
+
+    fn try_from(src: &'a [u8]) -> Result<Self, ShortBuf> {
+        let len = src.len();
+        if len > N {
+            Err(ShortBuf)
+        }
+        else {
+            let mut res = Self::default();
+            res.octets[..len].copy_from_slice(src);
+            res.len = len;
+            Ok(res)
+        }
+    }
+}
+
+
+//--- Deref, AsRef, Borrow, and Mut versions
+
+impl<const N: usize> core::ops::Deref for Array<N> {
+    type Target = [u8];
+
+    fn deref(&self) -> &Self::Target {
+        self.as_slice()
+    }
+}
+
+impl<const N: usize> core::ops::DerefMut for Array<N> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.as_slice_mut()
+    }
+}
+
+impl<const N: usize> AsRef<[u8]> for Array<N> {
+    fn as_ref(&self) -> &[u8] {
+        self.as_slice()
+    }
+}
+
+impl<const N: usize> AsMut<[u8]> for Array<N> {
+    fn as_mut(&mut self) -> &mut [u8] {
+        self.as_slice_mut()
+    }
+}
+
+impl<const N: usize> core::borrow::Borrow<[u8]> for Array<N> {
+    fn borrow(&self) -> &[u8] {
+        self.as_slice()
+    }
+}
+
+impl<const N: usize> core::borrow::BorrowMut<[u8]> for Array<N> {
+    fn borrow_mut(&mut self) -> &mut [u8] {
+        self.as_slice_mut()
+    }
+}
+
+
+//--- OctetsExt
+
+impl<const N: usize> OctetsExt for Array<N> {
+    fn truncate(&mut self, len: usize) {
+        self.len = cmp::min(self.len, len)
+    }
+}
+
+
+//--- OctetsBuilder and EmptyBuilder
+
+impl<const N: usize> OctetsBuilder for Array<N> {
+    type Octets = Self;
+
+    fn append_slice(&mut self, slice: &[u8]) -> Result<(), ShortBuf> {
+        let end = self.len + slice.len();
+        if end > N {
+            return Err(ShortBuf)
+        }
+        self.octets[self.len..end].copy_from_slice(slice);
+        self.len = end;
+        Ok(())
+    }
+
+    fn truncate(&mut self, len: usize) {
+        if len < self.len {
+            self.len = len
+        }
+    }
+
+    fn freeze(self) -> Self::Octets {
+        self
+    }
+}
+
+impl<const N: usize> EmptyBuilder for Array<N> {
+    fn empty() -> Self {
+        Default::default()
+    }
+
+    fn with_capacity(_capacity: usize) -> Self {
+        Self::empty()
+    }
+}
+
+
+//--- IntoBuilder, FromBuilder
+
+impl<const N: usize> IntoBuilder for Array<N> {
+    type Builder = Self;
+
+    fn into_builder(self) -> Self::Builder {
+        self
+    }
+}
+
+impl<const N: usize> FromBuilder for Array<N> {
+    type Builder = Self;
+
+    fn from_builder(builder: Self::Builder) -> Self {
+        builder
+    }
+}
+
+
+//--- PartialEq and Eq
+
+impl<T: AsRef<[u8]>, const N: usize> PartialEq<T> for Array<N> {
+    fn eq(&self, other: &T) -> bool {
+        self.as_slice().eq(other.as_ref())
+    }
+}
+
+impl<const N: usize> Eq for Array<N> { }
+
+
+//--- PartialOrd and Ord
+
+impl<T: AsRef<[u8]>, const N: usize> PartialOrd<T> for Array<N> {
+    fn partial_cmp(&self, other: &T) -> Option<cmp::Ordering> {
+        self.as_slice().partial_cmp(other.as_ref())
+    }
+}
+
+impl<const N: usize> Ord for Array<N> {
+    fn cmp(&self, other: &Self) -> cmp::Ordering {
+        self.as_slice().cmp(other)
+    }
+}
+
+
+//--- Hash
+
+impl<const N: usize> core::hash::Hash for Array<N> {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        self.as_slice().hash(state)
+    }
+}
+
+
+//--- Debug
+
+impl<const N: usize> fmt::Debug for Array<N> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_tuple("octets::Array")
+            .field(&self.as_slice())
+            .finish()
+    }
+}
+
 
 //============ Error Types ===================================================
 

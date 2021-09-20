@@ -101,8 +101,6 @@
 #[macro_use]
 extern crate std;
 
-extern crate core;
-
 use core::{cmp, fmt};
 use core::convert::TryFrom;
 #[cfg(feature = "bytes")] use bytes::{Bytes, BytesMut};
@@ -870,6 +868,7 @@ impl fmt::Display for ShortBuf {
 
 #[cfg(feature = "std")]
 impl std::error::Error for ShortBuf {}
+
 
 //============ Testing =======================================================
 

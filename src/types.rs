@@ -1,8 +1,8 @@
 
 use core::{cmp, fmt};
 use crate::traits::{
-    EmptyBuilder, FromBuilder, IntoBuilder, OctetsBuilder, OctetsExt,
-    ShortBuf,
+    EmptyBuilder, FromBuilder, IntoBuilder, OctetsBuilder,
+    ShortBuf, Truncate,
 };
 
 
@@ -112,9 +112,9 @@ impl<const N: usize> core::borrow::BorrowMut<[u8]> for Array<N> {
 }
 
 
-//--- OctetsExt
+//--- Truncate
 
-impl<const N: usize> OctetsExt for Array<N> {
+impl<const N: usize> Truncate for Array<N> {
     fn truncate(&mut self, len: usize) {
         self.len = cmp::min(self.len, len)
     }
@@ -125,8 +125,9 @@ impl<const N: usize> OctetsExt for Array<N> {
 
 impl<const N: usize> OctetsBuilder for Array<N> {
     type Octets = Self;
+    type AppendError = ShortBuf;
 
-    fn append_slice(&mut self, slice: &[u8]) -> Result<(), ShortBuf> {
+    fn try_append_slice(&mut self, slice: &[u8]) -> Result<(), ShortBuf> {
         let end = self.len + slice.len();
         if end > N {
             return Err(ShortBuf)
@@ -134,12 +135,6 @@ impl<const N: usize> OctetsBuilder for Array<N> {
         self.octets[self.len..end].copy_from_slice(slice);
         self.len = end;
         Ok(())
-    }
-
-    fn truncate(&mut self, len: usize) {
-        if len < self.len {
-            self.len = len
-        }
     }
 
     fn freeze(self) -> Self::Octets {

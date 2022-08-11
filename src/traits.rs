@@ -93,65 +93,13 @@
 
 
 use core::fmt;
+use core::convert::Infallible;
 #[cfg(feature = "bytes")] use bytes::{Bytes, BytesMut};
 #[cfg(feature = "std")] use std::borrow::Cow;
 #[cfg(feature = "std")] use std::vec::Vec;
 
 
 //============ Octets and Octet Builders =====================================
-
-//------------ OctetsExt -----------------------------------------------------
-
-/// An extension trait for octet sequences.
-///
-/// This trait collects some additional functionality that is not available
-/// via the more general `AsRef<[u8]>`. Currently, that is only truncating
-/// the sequence to a given length.
-pub trait OctetsExt: AsRef<[u8]> {
-    /// Truncate the sequence to `len` octets.
-    ///
-    /// If `len` is larger than the length of the sequence, nothing happens.
-    fn truncate(&mut self, len: usize);
-}
-
-impl<'a> OctetsExt for &'a [u8] {
-    fn truncate(&mut self, len: usize) {
-        if len < self.len() {
-            *self = &self[..len]
-        }
-    }
-}
-
-#[cfg(feature = "std")]
-impl<'a> OctetsExt for Cow<'a, [u8]> {
-    fn truncate(&mut self, len: usize) {
-        match *self {
-            Cow::Borrowed(ref mut slice) => *slice = &slice[..len],
-            Cow::Owned(ref mut vec) => vec.truncate(len),
-        }
-    }
-}
-
-#[cfg(feature = "std")]
-impl OctetsExt for Vec<u8> {
-    fn truncate(&mut self, len: usize) {
-        self.truncate(len)
-    }
-}
-
-#[cfg(feature = "bytes")]
-impl OctetsExt for Bytes {
-    fn truncate(&mut self, len: usize) {
-        self.truncate(len)
-    }
-}
-
-#[cfg(feature = "smallvec")]
-impl<A: smallvec::Array<Item = u8>> OctetsExt for smallvec::SmallVec<A> {
-    fn truncate(&mut self, len: usize) {
-        self.truncate(len)
-    }
-}
 
 
 //------------ OctetsRef -----------------------------------------------------
@@ -254,6 +202,55 @@ impl<'a, A: smallvec::Array<Item = u8>>
 
     fn range(self, start: usize, end: usize) -> Self::Range {
         &self.as_slice()[start..end]
+    }
+}
+
+//------------ Truncate ------------------------------------------------------
+
+/// An octet sequence that can be shortened.
+pub trait Truncate {
+    /// Truncate the sequence to `len` octets.
+    ///
+    /// If `len` is larger than the length of the sequence, nothing happens.
+    fn truncate(&mut self, len: usize);
+}
+
+impl<'a> Truncate for &'a [u8] {
+    fn truncate(&mut self, len: usize) {
+        if len < self.len() {
+            *self = &self[..len]
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+impl<'a> Truncate for Cow<'a, [u8]> {
+    fn truncate(&mut self, len: usize) {
+        match *self {
+            Cow::Borrowed(ref mut slice) => *slice = &slice[..len],
+            Cow::Owned(ref mut vec) => vec.truncate(len),
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+impl Truncate for Vec<u8> {
+    fn truncate(&mut self, len: usize) {
+        self.truncate(len)
+    }
+}
+
+#[cfg(feature = "bytes")]
+impl Truncate for Bytes {
+    fn truncate(&mut self, len: usize) {
+        self.truncate(len)
+    }
+}
+
+#[cfg(feature = "smallvec")]
+impl<A: smallvec::Array<Item = u8>> Truncate for smallvec::SmallVec<A> {
+    fn truncate(&mut self, len: usize) {
+        self.truncate(len)
     }
 }
 
@@ -365,14 +362,20 @@ pub trait OctetsBuilder: AsRef<[u8]> + AsMut<[u8]> + Sized {
     /// [`IntoBuilder`]: trait.IntoBuilder.html
     type Octets: AsRef<[u8]>;
 
+    /// The type of the error that happens when appending data fails.
+    ///
+    /// For types, such as `Vec<u8>` or `BytesMut` where appending never
+    /// fails (other than with an out-of-memory panic), this should be
+    /// `Infallible` (or `!` when that becomes stable).
+    type AppendError;
+
     /// Appends the content of a slice to the builder.
     ///
     /// If there isn’t enough space available for appending the slice,
     /// returns an error and leaves the builder alone.
-    fn append_slice(&mut self, slice: &[u8]) -> Result<(), ShortBuf>;
-
-    /// Truncates the builder back to a length of `len` octets.
-    fn truncate(&mut self, len: usize);
+    fn try_append_slice(
+        &mut self, slice: &[u8]
+    ) -> Result<(), Self::AppendError>;
 
     /// Converts the builder into immutable octets.
     fn freeze(self) -> Self::Octets;
@@ -392,6 +395,12 @@ pub trait OctetsBuilder: AsRef<[u8]> + AsMut<[u8]> + Sized {
         self.as_ref().is_empty()
     }
 
+    fn append_slice(&mut self, slice: &[u8])
+    where Self::AppendError: Into<Infallible> {
+        // XXX Use .into_ok() once that is stable.
+        let _ = self.try_append_slice(slice);
+    }
+
     /// Appends all data or nothing.
     ///
     /// The method executes the provided closure that presumably will try to
@@ -402,16 +411,17 @@ pub trait OctetsBuilder: AsRef<[u8]> + AsMut<[u8]> + Sized {
     /// Note that upon an error the builder is _only_ truncated. If the
     /// closure modified any already present data via `AsMut<[u8]>`, these
     /// modification will survive.
-    fn append_all<F>(&mut self, op: F) -> Result<(), ShortBuf>
+    fn try_append_all<F>(&mut self, op: F) -> Result<(), Self::AppendError>
     where
-        F: FnOnce(&mut Self) -> Result<(), ShortBuf>,
+        Self: Truncate,
+        F: FnOnce(&mut Self) -> Result<(), Self::AppendError>,
     {
         let pos = self.len();
         match op(self) {
             Ok(_) => Ok(()),
-            Err(_) => {
+            Err(err) => {
                 self.truncate(pos);
-                Err(ShortBuf)
+                Err(err)
             }
         }
     }
@@ -420,14 +430,13 @@ pub trait OctetsBuilder: AsRef<[u8]> + AsMut<[u8]> + Sized {
 #[cfg(feature = "std")]
 impl OctetsBuilder for Vec<u8> {
     type Octets = Self;
+    type AppendError = Infallible;
 
-    fn append_slice(&mut self, slice: &[u8]) -> Result<(), ShortBuf> {
+    fn try_append_slice(
+        &mut self, slice: &[u8]
+    ) -> Result<(), Self::AppendError> {
         self.extend_from_slice(slice);
         Ok(())
-    }
-
-    fn truncate(&mut self, len: usize) {
-        Vec::truncate(self, len)
     }
 
     fn freeze(self) -> Self::Octets {
@@ -438,14 +447,13 @@ impl OctetsBuilder for Vec<u8> {
 #[cfg(feature = "bytes")]
 impl OctetsBuilder for BytesMut {
     type Octets = Bytes;
+    type AppendError = Infallible;
 
-    fn append_slice(&mut self, slice: &[u8]) -> Result<(), ShortBuf> {
+    fn try_append_slice(
+        &mut self, slice: &[u8]
+    ) -> Result<(), Self::AppendError> {
         self.extend_from_slice(slice);
         Ok(())
-    }
-
-    fn truncate(&mut self, len: usize) {
-        BytesMut::truncate(self, len)
     }
 
     fn freeze(self) -> Self::Octets {
@@ -456,14 +464,13 @@ impl OctetsBuilder for BytesMut {
 #[cfg(feature = "smallvec")]
 impl<A: smallvec::Array<Item = u8>> OctetsBuilder for smallvec::SmallVec<A> {
     type Octets = Self;
+    type AppendError = Infallible;
 
-    fn append_slice(&mut self, slice: &[u8]) -> Result<(), ShortBuf> {
+    fn try_append_slice(
+        &mut self, slice: &[u8]
+    ) -> Result<(), Self::AppendError> {
         self.extend_from_slice(slice);
         Ok(())
-    }
-
-    fn truncate(&mut self, len: usize) {
-        smallvec::SmallVec::truncate(self, len)
     }
 
     fn freeze(self) -> Self::Octets {

@@ -3,12 +3,6 @@
 //! Parsing is a little more complicated since encoded data may very well be
 //! broken or ambiguously encoded. The helper type [`Parser`] wraps an octets
 //! ref and allows to parse values from the octets.
-//!
-//! While there is a trait [`Parse`] for types that know how parse a value
-//! from an octets sequence, this trait is often not needed and a simple
-//! `parse` function will do. We use it primarily as an extension trait to
-//! provide this `parse` function for built-in types.
-
 
 use core::fmt;
 use super::traits::OctetsRef;
@@ -120,7 +114,7 @@ impl<Ref: AsRef<[u8]>> Parser<Ref> {
     /// Returns a slice for the next `len` octets.
     ///
     /// If less than `len` octets are left, returns an error.
-    pub fn peek(&self, len: usize) -> Result<&[u8], ParseError> {
+    pub fn peek(&self, len: usize) -> Result<&[u8], ShortInput> {
         self.check_len(len)?;
         Ok(&self.peek_all()[..len])
     }
@@ -135,9 +129,9 @@ impl<Ref: AsRef<[u8]>> Parser<Ref> {
     /// It is okay to reposition anywhere within the sequence. However,
     /// if `pos` is larger than the length of the sequence, an error is
     /// returned.
-    pub fn seek(&mut self, pos: usize) -> Result<(), ParseError> {
+    pub fn seek(&mut self, pos: usize) -> Result<(), ShortInput> {
         if pos > self.len {
-            Err(ParseError::ShortInput)
+            Err(ShortInput)
         } else {
             self.pos = pos;
             Ok(())
@@ -147,9 +141,9 @@ impl<Ref: AsRef<[u8]>> Parser<Ref> {
     /// Advances the parser‘s position by `len` octets.
     ///
     /// If this would take the parser beyond its end, an error is returned.
-    pub fn advance(&mut self, len: usize) -> Result<(), ParseError> {
+    pub fn advance(&mut self, len: usize) -> Result<(), ShortInput> {
         if len > self.remaining() {
-            Err(ParseError::ShortInput)
+            Err(ShortInput)
         } else {
             self.pos += len;
             Ok(())
@@ -164,9 +158,9 @@ impl<Ref: AsRef<[u8]>> Parser<Ref> {
     /// Checks that there are `len` octets left to parse.
     ///
     /// If there aren’t, returns an error.
-    pub fn check_len(&self, len: usize) -> Result<(), ParseError> {
+    pub fn check_len(&self, len: usize) -> Result<(), ShortInput> {
         if self.remaining() < len {
-            Err(ParseError::ShortInput)
+            Err(ShortInput)
         } else {
             Ok(())
         }
@@ -181,13 +175,13 @@ impl<Ref: AsRef<[u8]>> Parser<Ref> {
     pub fn parse_octets(
         &mut self,
         len: usize,
-    ) -> Result<Ref::Range, ParseError>
+    ) -> Result<Ref::Range, ShortInput>
     where
         Ref: OctetsRef,
     {
         let end = self.pos + len;
         if end > self.len {
-            return Err(ParseError::ShortInput);
+            return Err(ShortInput);
         }
         let res = self.octets.range(self.pos, end);
         self.pos = end;
@@ -201,7 +195,7 @@ impl<Ref: AsRef<[u8]>> Parser<Ref> {
     ///
     /// If there aren’t enough octets left in the parser to fill the buffer
     /// completely, returns an error and leaves the parser untouched.
-    pub fn parse_buf(&mut self, buf: &mut [u8]) -> Result<(), ParseError> {
+    pub fn parse_buf(&mut self, buf: &mut [u8]) -> Result<(), ShortInput> {
         let pos = self.pos;
         self.advance(buf.len())?;
         buf.copy_from_slice(&self.octets.as_ref()[pos..self.pos]);
@@ -212,7 +206,7 @@ impl<Ref: AsRef<[u8]>> Parser<Ref> {
     ///
     /// Advances the parser by one octet. If there aren’t enough octets left,
     /// leaves the parser untouched and returns an error instead.
-    pub fn parse_i8(&mut self) -> Result<i8, ParseError> {
+    pub fn parse_i8(&mut self) -> Result<i8, ShortInput> {
         let res = self.peek(1)?[0] as i8;
         self.pos += 1;
         Ok(res)
@@ -222,7 +216,7 @@ impl<Ref: AsRef<[u8]>> Parser<Ref> {
     ///
     /// Advances the parser by one octet. If there aren’t enough octets left,
     /// leaves the parser untouched and returns an error instead.
-    pub fn parse_u8(&mut self) -> Result<u8, ParseError> {
+    pub fn parse_u8(&mut self) -> Result<u8, ShortInput> {
         let res = self.peek(1)?[0];
         self.pos += 1;
         Ok(res)
@@ -234,7 +228,7 @@ impl<Ref: AsRef<[u8]>> Parser<Ref> {
     /// byte order if necessary. The parser is advanced by two octets. If
     /// there aren’t enough octets left, leaves the parser untouched and
     /// returns an error instead.
-    pub fn parse_i16(&mut self) -> Result<i16, ParseError> {
+    pub fn parse_i16(&mut self) -> Result<i16, ShortInput> {
         let mut res = [0; 2];
         self.parse_buf(&mut res)?;
         Ok(i16::from_be_bytes(res))
@@ -246,7 +240,7 @@ impl<Ref: AsRef<[u8]>> Parser<Ref> {
     /// byte order if necessary. The parser is advanced by two ocetets. If
     /// there aren’t enough octets left, leaves the parser untouched and
     /// returns an error instead.
-    pub fn parse_u16(&mut self) -> Result<u16, ParseError> {
+    pub fn parse_u16(&mut self) -> Result<u16, ShortInput> {
         let mut res = [0; 2];
         self.parse_buf(&mut res)?;
         Ok(u16::from_be_bytes(res))
@@ -258,7 +252,7 @@ impl<Ref: AsRef<[u8]>> Parser<Ref> {
     /// byte order if necessary. The parser is advanced by four octets. If
     /// there aren’t enough octets left, leaves the parser untouched and
     /// returns an error instead.
-    pub fn parse_i32(&mut self) -> Result<i32, ParseError> {
+    pub fn parse_i32(&mut self) -> Result<i32, ShortInput> {
         let mut res = [0; 4];
         self.parse_buf(&mut res)?;
         Ok(i32::from_be_bytes(res))
@@ -270,224 +264,28 @@ impl<Ref: AsRef<[u8]>> Parser<Ref> {
     /// byte order if necessary. The parser is advanced by four octets. If
     /// there aren’t enough octets left, leaves the parser untouched and
     /// returns an error instead.
-    pub fn parse_u32(&mut self) -> Result<u32, ParseError> {
+    pub fn parse_u32(&mut self) -> Result<u32, ShortInput> {
         let mut res = [0; 4];
         self.parse_buf(&mut res)?;
         Ok(u32::from_be_bytes(res))
     }
-
-    /// Parses a given amount of octets through a closure.
-    ///
-    /// Parses a block of `limit` octets and moves the parser to the end of
-    /// that block or, if less than `limit` octets are still available, to
-    /// the end of the parser.
-    ///
-    /// The closure `op` will be allowed to parse up to `limit` octets. If it
-    /// does so successfully or returns with a form error, the method returns
-    /// its return value. If it returns with a short buffer error, the method
-    /// returns a form error. If it returns successfully with less than
-    /// `limit` octets parsed, returns a form error indicating trailing data.
-    /// If the limit is larger than the remaining number of octets, returns a
-    /// `ParseError::ShortInput`.
-    ///
-    //  XXX NEEDS TESTS!!!
-    pub fn parse_block<F, U>(
-        &mut self,
-        limit: usize,
-        op: F,
-    ) -> Result<U, ParseError>
-    where
-        F: FnOnce(&mut Self) -> Result<U, ParseError>,
-    {
-        let end = self.pos + limit;
-        if end > self.len {
-            self.advance_to_end();
-            return Err(ParseError::ShortInput);
-        }
-        let len = self.len;
-        self.len = end;
-        let res = op(self);
-        self.len = len;
-        let res = if self.pos != end {
-            Err(ParseError::Form(FormError::new("trailing data in field")))
-        } else if let Err(ParseError::ShortInput) = res {
-            Err(ParseError::Form(FormError::new("short field")))
-        } else {
-            res
-        };
-        self.pos = end;
-        res
-    }
-}
-
-//------------ Parse ------------------------------------------------------
-
-/// A type that can extract a value from a parser.
-///
-/// The trait is a companion to [`Parser<Ref>`]: it allows a type to use a
-/// parser to create a value of itself. Because types may be generic over
-/// octets types, the trait is generic over the octets reference of the
-/// parser in question. Implementations should use minimal trait bounds
-/// matching the parser methods they use.
-///
-/// For types that are generic over an octets sequence, the reference type
-/// should be tied to the type’s own type argument. This will avoid having
-/// to provide type annotations when simply calling `Parse::parse` for the
-/// type. Typically this will happen via `OctetsRef::Range`. For instance,
-/// a type `Foo<Octets>` should provide:
-///
-/// ```ignore
-/// impl<Ref: OctetsRef> Parse<Ref> for Foo<Ref::Range> {
-///     // etc.
-/// }
-/// ```
-///
-/// [`Parser<Ref>`]: struct.Parser.html
-pub trait Parse<Ref>: Sized {
-    /// Extracts a value from the beginning of `parser`.
-    ///
-    /// If parsing fails and an error is returned, the parser’s position
-    /// should be considered to be undefined. If it is supposed to be reused
-    /// in this case, you should store the position before attempting to parse
-    /// and seek to that position again before continuing.
-    fn parse(parser: &mut Parser<Ref>) -> Result<Self, ParseError>;
-
-    /// Skips over a value of this type at the beginning of `parser`.
-    ///
-    /// This function is the same as `parse` but doesn’t return the result.
-    /// It can be used to check if the content of `parser` is correct or to
-    /// skip over unneeded parts of the parser.
-    fn skip(parser: &mut Parser<Ref>) -> Result<(), ParseError>;
-}
-
-impl<T: AsRef<[u8]>> Parse<T> for i8 {
-    fn parse(parser: &mut Parser<T>) -> Result<Self, ParseError> {
-        parser.parse_i8().map_err(Into::into)
-    }
-
-    fn skip(parser: &mut Parser<T>) -> Result<(), ParseError> {
-        parser.advance(1).map_err(Into::into)
-    }
-}
-
-impl<T: AsRef<[u8]>> Parse<T> for u8 {
-    fn parse(parser: &mut Parser<T>) -> Result<Self, ParseError> {
-        parser.parse_u8().map_err(Into::into)
-    }
-
-    fn skip(parser: &mut Parser<T>) -> Result<(), ParseError> {
-        parser.advance(1).map_err(Into::into)
-    }
-}
-
-impl<T: AsRef<[u8]>> Parse<T> for i16 {
-    fn parse(parser: &mut Parser<T>) -> Result<Self, ParseError> {
-        parser.parse_i16().map_err(Into::into)
-    }
-
-    fn skip(parser: &mut Parser<T>) -> Result<(), ParseError> {
-        parser.advance(2).map_err(Into::into)
-    }
-}
-
-impl<T: AsRef<[u8]>> Parse<T> for u16 {
-    fn parse(parser: &mut Parser<T>) -> Result<Self, ParseError> {
-        parser.parse_u16().map_err(Into::into)
-    }
-
-    fn skip(parser: &mut Parser<T>) -> Result<(), ParseError> {
-        parser.advance(2).map_err(Into::into)
-    }
-}
-
-impl<T: AsRef<[u8]>> Parse<T> for i32 {
-    fn parse(parser: &mut Parser<T>) -> Result<Self, ParseError> {
-        parser.parse_i32().map_err(Into::into)
-    }
-
-    fn skip(parser: &mut Parser<T>) -> Result<(), ParseError> {
-        parser.advance(4).map_err(Into::into)
-    }
-}
-
-impl<T: AsRef<[u8]>> Parse<T> for u32 {
-    fn parse(parser: &mut Parser<T>) -> Result<Self, ParseError> {
-        parser.parse_u32().map_err(Into::into)
-    }
-
-    fn skip(parser: &mut Parser<T>) -> Result<(), ParseError> {
-        parser.advance(4).map_err(Into::into)
-    }
 }
 
 
-//--------- ParseError -------------------------------------------------------
+//--------- ShortInput -------------------------------------------------------
 
-/// An error happened while parsing data.
+/// An attempt was made to go beyond the end of the parser.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum ParseError {
-    /// An attempt was made to go beyond the end of the parser.
-    ShortInput,
-
-    /// A formatting error occurred.
-    Form(FormError),
-}
-
-impl ParseError {
-    /// Creates a new parse error as a form error with the given message.
-    pub fn form_error(msg: &'static str) -> Self {
-        FormError::new(msg).into()
-    }
-}
-
-//--- From
-
-impl From<FormError> for ParseError {
-    fn from(err: FormError) -> Self {
-        ParseError::Form(err)
-    }
-}
+pub struct ShortInput;
 
 //--- Display and Error
 
-impl fmt::Display for ParseError {
+impl fmt::Display for ShortInput {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            ParseError::ShortInput => f.write_str("unexpected end of input"),
-            ParseError::Form(ref err) => err.fmt(f),
-        }
+        f.write_str("unexpected end of input")
     }
 }
 
 #[cfg(feature = "std")]
-impl std::error::Error for ParseError {}
-
-
-//------------ FormError -----------------------------------------------------
-
-/// A formatting error occured.
-///
-/// This is a generic error for all kinds of error cases that result in data
-/// not being accepted. For diagnostics, the error is being given a static
-/// string describing the error.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct FormError(&'static str);
-
-impl FormError {
-    /// Creates a new form error value with the given diagnostics string.
-    pub fn new(msg: &'static str) -> Self {
-        FormError(msg)
-    }
-}
-
-//--- Display and Error
-
-impl fmt::Display for FormError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.write_str(self.0)
-    }
-}
-
-#[cfg(feature = "std")]
-impl std::error::Error for FormError {}
+impl std::error::Error for ShortInput {}
 

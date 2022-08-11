@@ -8,12 +8,9 @@
 //! These traits are all defined – and explained en detail – in the [_traits_]
 //! module. They are, however, all re-exported here at the crate root.
 //!
-//! In addition, the crate provides helper types to extract data from and
-//! construct such octet sequences in a sequential fashion. Extracting data
-//! has been termed _parsing_ and is provided via the [_parse_] module.
-//! For constructing sequences, the term _composing_ was chosen to clearly
-//! distinguish the process from formatting into human-readable test. Types
-//! for this purpose live in the [_compose_] module.
+//! In addition, the crate provides a helper type to extract data that has
+//! been encoded into an octet sequences. This has been dubbed _parsing_ and
+//! is provided via the [_parse_] module.
 
 #![no_std]
 #![allow(renamed_and_removed_lints)]
@@ -27,11 +24,9 @@ extern crate std;
 
 pub use self::traits::*;
 pub use self::parse::*;
-pub use self::compose::*;
 
 pub mod traits;
 pub mod parse;
-pub mod compose;
 pub mod serde;
 pub mod types;
 

@@ -1,11 +1,11 @@
 [package]
-name = "octets"
-version = "0.1.0"
+name = "octseq"
+version = "0.1.0-dev"
 edition = "2021"
 rust_version = "0.56"
 authors = ["Martin Hoffmann <martin@nlnetlabs.nl>"]
 description = "Abstractions for types representing octet sequences."
-documentation = "https://docs.rs/octets"
+documentation = "https://docs.rs/octseq"
 homepage = "https://github.com/NLnetLabs/octets/"
 readme = "README.md"
 keywords = ["octets", "bytes", "generics"]

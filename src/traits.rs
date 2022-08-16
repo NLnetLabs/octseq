@@ -16,7 +16,7 @@
 //! # Octets and Octets References
 //!
 //! There is no special trait for octets, we simply use `AsRef<[u8]>` for
-//! imutable octets or `AsMut<[u8]>` if the octets of the sequence can be
+//! immutable octets or `AsMut<[u8]>` if the octets of the sequence can be
 //! manipulated (but the length is still fixed). This way, any type
 //! implementing these traits can be used already. The trait [`OctetsExt`]
 //! has been defined to collect additional methods that aren’t available via
@@ -31,7 +31,7 @@
 //!
 //! One type is special in that it is its own octets reference: `&[u8]`,
 //! referred to as an _octets slice_ here. This means that you
-//! always use an octets slice irregardless whether a type is generic over
+//! always use an octets slice regardless of whether a type is generic over
 //! an octets sequence or an octets reference.
 //!
 //! The [`OctetsRef`] trait is separate because of limitations of lifetimes
@@ -106,7 +106,7 @@ use core::convert::Infallible;
 
 /// A reference to an octets sequence.
 ///
-/// This trait is to be implemented for a (imutable) reference to a type of
+/// This trait is to be implemented for a (immutable) reference to a type of
 /// an octets sequence. I.e., it `T` is an octets sequence, `OctetsRef` needs
 /// to be implemented for `&T`.
 ///

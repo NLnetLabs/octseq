@@ -12,15 +12,17 @@
 //! sequence is actually a buffer into which octets can be placed, it is
 //! called an `octets builder.`
 //!
+//! # Octets
 //!
-//! # Octets and Octets References
+//! There is no special trait for octets, we simply use `AsRef<[u8]>`. This
+//! way, any type implementing these traits can be used as a basic octets
+//! already. Additional properties are signalled through additional traits.
+//! `AsMut<[u8]>` is used to signal the ability to manipulate the contents of
+//! an octets sequence (while the length is still fixed). The trait
+//! [`Truncate`] introduced by the crate signals that an octets sequence can
+//! be shortened.
 //!
-//! There is no special trait for octets, we simply use `AsRef<[u8]>` for
-//! immutable octets or `AsMut<[u8]>` if the octets of the sequence can be
-//! manipulated (but the length is still fixed). This way, any type
-//! implementing these traits can be used already. The trait [`OctetsExt`]
-//! has been defined to collect additional methods that aren’t available via
-//! plain `AsRef<[u8]>`.
+//! # Octets References
 //!
 //! A reference to an octets type implements [`OctetsRef`]. The main purpose
 //! of this trait is to allow taking a sub-sequence, called a ‘range’,
@@ -37,7 +39,7 @@
 //! The [`OctetsRef`] trait is separate because of limitations of lifetimes
 //! in traits. It has an associated type `OctetsRef::Range` that defines the
 //! type of a range. When using the trait as a trait bound for a generic type,
-//! you will typically bound a reference to this type. For instance, a generic
+//! you will typically use a reference to this type. For instance, a generic
 //! function taking part out of some octets and returning a reference to it
 //! could be defined like so:
 //!
@@ -63,8 +65,12 @@
 //! Octets builders and their [`OctetsBuilder`] trait are comparatively
 //! straightforward. They represent a buffer to which octets can be appended.
 //! Whether the buffer can grow to accommodate appended data depends on the
-//! underlying type. Because it may not, all such operations may fail with a
-//! [`ShortBuf`] error.
+//! underlying type. Because it may not, all such operations may fail with an
+//! error defined by the trait implementation via
+//! `OctetsBuilder::AppendError`. Types where appending never fails (other
+//! than possibly panicking when running out of memory) should use the core
+//! library’s `Infallible` type here. This unlocks additional methods that
+//! don’t return a result and thus avoid an otherwise necessary unwrap.
 //!
 //! The [`EmptyBuilder`] trait marks a type as being able to create a new,
 //! empty builder.

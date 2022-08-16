@@ -271,12 +271,26 @@ impl<A: smallvec::Array<Item = u8>> Truncate for smallvec::SmallVec<A> {
 /// This is different from just `From` in that the conversion may fail if the
 /// source sequence is longer than the space available for the target type.
 pub trait OctetsFrom<Source>: Sized {
+    type Error;
+
     /// Performs the conversion.
-    fn octets_from(source: Source) -> Result<Self, ShortBuf>;
+    fn try_octets_from(source: Source) -> Result<Self, Self::Error>;
+
+    /// Performs an infallible conversion.
+    fn octets_from(source: Source) -> Self
+    where Self::Error: Into<Infallible> {
+        // XXX Use .into_ok() once that is stable.
+        match Self::try_octets_from(source) {
+            Ok(ok) => ok,
+            Err(_) => unreachable!()
+        }
+    }
 }
 
 impl<'a, Source: AsRef<[u8]> + 'a> OctetsFrom<&'a Source> for &'a [u8] {
-    fn octets_from(source: &'a Source) -> Result<Self, ShortBuf> {
+    type Error = Infallible;
+
+    fn try_octets_from(source: &'a Source) -> Result<Self, Self::Error> {
         Ok(source.as_ref())
     }
 }
@@ -286,7 +300,9 @@ impl<Source> OctetsFrom<Source> for Vec<u8>
 where
     Self: From<Source>,
 {
-    fn octets_from(source: Source) -> Result<Self, ShortBuf> {
+    type Error = Infallible;
+
+    fn try_octets_from(source: Source) -> Result<Self, Self::Error> {
         Ok(From::from(source))
     }
 }
@@ -296,7 +312,9 @@ impl<Source> OctetsFrom<Source> for Bytes
 where
     Self: From<Source>,
 {
-    fn octets_from(source: Source) -> Result<Self, ShortBuf> {
+    type Error = Infallible;
+
+    fn try_octets_from(source: Source) -> Result<Self, Self::Error> {
         Ok(From::from(source))
     }
 }
@@ -306,7 +324,9 @@ impl<Source> OctetsFrom<Source> for BytesMut
 where
     Self: From<Source>,
 {
-    fn octets_from(source: Source) -> Result<Self, ShortBuf> {
+    type Error = Infallible;
+
+    fn try_octets_from(source: Source) -> Result<Self, Self::Error> {
         Ok(From::from(source))
     }
 }
@@ -317,7 +337,9 @@ where
     Source: AsRef<u8>,
     A: Array<Item = u8>,
 {
-    fn octets_from(source: Source) -> Result<Self, ShortBuf> {
+    type Error = Infallible;
+
+    fn try_octets_from(source: Source) -> Result<Self, Self::Infallible> {
         Ok(smallvec::ToSmallVec::to_smallvec(source.as_ref()))
     }
 }
@@ -336,14 +358,27 @@ where
 ///
 /// This trait has a blanket implementation for all pairs of types where
 /// `OctetsFrom` has been implemented.
-pub trait OctetsInto<Target> {
+pub trait OctetsInto<Target>: Sized {
+    type Error;
+
     /// Performs the conversion.
-    fn octets_into(self) -> Result<Target, ShortBuf>;
+    fn try_octets_into(self) -> Result<Target, Self::Error>;
+
+    /// Performs an infallible conversion.
+    fn octets_into(self) -> Target
+    where Self::Error: Into<Infallible> {
+        match self.try_octets_into() {
+            Ok(ok) => ok,
+            Err(_) => unreachable!()
+        }
+    }
 }
 
 impl<Source, Target: OctetsFrom<Source>> OctetsInto<Target> for Source {
-    fn octets_into(self) -> Result<Target, ShortBuf> {
-        Target::octets_from(self)
+    type Error = <Target as OctetsFrom<Source>>::Error;
+
+    fn try_octets_into(self) -> Result<Target, Self::Error> {
+        Target::try_octets_from(self)
     }
 }
 

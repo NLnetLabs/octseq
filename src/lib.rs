@@ -28,5 +28,6 @@ pub use self::parse::*;
 pub mod traits;
 pub mod parse;
 pub mod serde;
+pub mod str;
 pub mod types;
 

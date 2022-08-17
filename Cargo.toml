@@ -2,7 +2,7 @@
 name = "octseq"
 version = "0.1.0-dev"
 edition = "2021"
-rust_version = "0.56"
+rust-version = "1.56"
 authors = ["Martin Hoffmann <martin@nlnetlabs.nl>"]
 description = "Abstractions for types representing octet sequences."
 documentation = "https://docs.rs/octseq"

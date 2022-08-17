@@ -72,8 +72,20 @@
 //! library’s `Infallible` type here. This unlocks additional methods that
 //! don’t return a result and thus avoid an otherwise necessary unwrap.
 //!
-//! The [`EmptyBuilder`] trait marks a type as being able to create a new,
-//! empty builder.
+//! The [`OctetsBuilder`] trait only provides methods to append data to the
+//! builder. Implementations may, however, provide more functionality. They
+//! do so by implementing additional traits. Conversely, if additional
+//! functionality is needed from a builder, this can be expressed by
+//! adding trait bounds.
+//!
+//! Some examples are:
+//!
+//! * creating an empty octets builder from scratch is provided by the
+//!   [`EmptyBuilder`] trait,
+//! * looking at already assembled octets is done via `AsRef<[u8]>`,
+//! * manipulation of already assembled octets requires `AsMut<[u8]>`, and
+//! * truncating the sequence of assembled octets happens through
+//!   [`Truncate`].
 //!
 //!
 //! # Conversion Traits
@@ -96,6 +108,11 @@
 //! In many cases you can get away with a simple `AsRef<[u8]>` bound. Only use
 //! an explicit `OctetsRef` bound when you need to return a range that may be
 //! kept around.
+//!
+//! Similarly, only demand of an octets builder what you actually need. Even
+//! something as seemingly trivial as `AsMut<[u8]>` isn’t a given. For
+//! instance, `Cow<[u8]>` doesn’t implement it but otherwise is a perfectly
+//! fine octets builder.
 
 
 use core::fmt;
@@ -359,7 +376,7 @@ impl<Source, Target: OctetsFrom<Source>> OctetsInto<Target> for Source {
 /// Octet builders provide access to the already assembled data through
 /// octet slices via their implementations of `AsRef<[u8]>` and
 /// `AsMut<[u8]>`.
-pub trait OctetsBuilder: AsRef<[u8]> + AsMut<[u8]> + Sized {
+pub trait OctetsBuilder {
     /// The type of the octets the builder can be converted into.
     ///
     /// If `Octets` implements [`IntoBuilder`], the `Builder` associated
@@ -384,22 +401,14 @@ pub trait OctetsBuilder: AsRef<[u8]> + AsMut<[u8]> + Sized {
     ) -> Result<(), Self::AppendError>;
 
     /// Converts the builder into immutable octets.
-    fn freeze(self) -> Self::Octets;
+    fn freeze(self) -> Self::Octets
+    where Self: Sized;
 
     /// Returns the length of the already assembled data.
-    ///
-    /// This is a convenience method and identical to `self.as_ref().len()`.
-    fn len(&self) -> usize {
-        self.as_ref().len()
-    }
+    fn len(&self) -> usize;
 
     /// Returns whether the builder is currently empty.
-    ///
-    /// This is a convenience method and identical to
-    /// `self.as_ref().is_empty()`.
-    fn is_empty(&self) -> bool {
-        self.as_ref().is_empty()
-    }
+    fn is_empty(&self) -> bool;
 
     fn append_slice(&mut self, slice: &[u8])
     where Self::AppendError: Into<Infallible> {
@@ -445,6 +454,47 @@ impl OctetsBuilder for Vec<u8> {
         Ok(())
     }
 
+    fn len(&self) -> usize {
+        self.len()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.is_empty()
+    }
+
+    fn freeze(self) -> Self::Octets {
+        self
+    }
+}
+
+#[cfg(feature = "std")]
+impl<'a> OctetsBuilder for Cow<'a, [u8]> {
+    type Octets = Self;
+    type AppendError = Infallible;
+
+    fn try_append_slice(
+        &mut self, slice: &[u8]
+    ) -> Result<(), Self::AppendError> {
+        if let Cow::Owned(ref mut vec) = *self {
+            vec.extend_from_slice(slice);
+        } else {
+            let mut vec = std::mem::replace(
+                self, Cow::Borrowed(b"")
+            ).into_owned();
+            vec.extend_from_slice(slice);
+            *self = Cow::Owned(vec);
+        }
+        Ok(())
+    }
+
+    fn len(&self) -> usize {
+        self.as_ref().len()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.as_ref().is_empty()
+    }
+
     fn freeze(self) -> Self::Octets {
         self
     }
@@ -462,6 +512,14 @@ impl OctetsBuilder for BytesMut {
         Ok(())
     }
 
+    fn len(&self) -> usize {
+        self.len()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.is_empty()
+    }
+
     fn freeze(self) -> Self::Octets {
         self.freeze()
     }
@@ -477,6 +535,14 @@ impl<A: smallvec::Array<Item = u8>> OctetsBuilder for smallvec::SmallVec<A> {
     ) -> Result<(), Self::AppendError> {
         self.extend_from_slice(slice);
         Ok(())
+    }
+
+    fn len(&self) -> usize {
+        self.len()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.is_empty()
     }
 
     fn freeze(self) -> Self::Octets {
@@ -565,10 +631,10 @@ impl<'a> IntoBuilder for &'a [u8] {
 
 #[cfg(feature = "std")]
 impl<'a> IntoBuilder for Cow<'a, [u8]> {
-    type Builder = Vec<u8>;
+    type Builder = Self;
 
     fn into_builder(self) -> Self::Builder {
-        self.into_owned()
+        self
     }
 }
 
@@ -607,6 +673,15 @@ pub trait FromBuilder: AsRef<[u8]> + Sized {
 
 #[cfg(feature = "std")]
 impl FromBuilder for Vec<u8> {
+    type Builder = Self;
+
+    fn from_builder(builder: Self::Builder) -> Self {
+        builder
+    }
+}
+
+#[cfg(feature = "std")]
+impl<'a> FromBuilder for Cow<'a, [u8]> {
     type Builder = Self;
 
     fn from_builder(builder: Self::Builder) -> Self {

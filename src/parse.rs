@@ -131,7 +131,7 @@ impl<Ref: AsRef<[u8]>> Parser<Ref> {
     /// returned.
     pub fn seek(&mut self, pos: usize) -> Result<(), ShortInput> {
         if pos > self.len {
-            Err(ShortInput)
+            Err(ShortInput(()))
         } else {
             self.pos = pos;
             Ok(())
@@ -143,7 +143,7 @@ impl<Ref: AsRef<[u8]>> Parser<Ref> {
     /// If this would take the parser beyond its end, an error is returned.
     pub fn advance(&mut self, len: usize) -> Result<(), ShortInput> {
         if len > self.remaining() {
-            Err(ShortInput)
+            Err(ShortInput(()))
         } else {
             self.pos += len;
             Ok(())
@@ -160,7 +160,7 @@ impl<Ref: AsRef<[u8]>> Parser<Ref> {
     /// If there aren’t, returns an error.
     pub fn check_len(&self, len: usize) -> Result<(), ShortInput> {
         if self.remaining() < len {
-            Err(ShortInput)
+            Err(ShortInput(()))
         } else {
             Ok(())
         }
@@ -181,7 +181,7 @@ impl<Ref: AsRef<[u8]>> Parser<Ref> {
     {
         let end = self.pos + len;
         if end > self.len {
-            return Err(ShortInput);
+            return Err(ShortInput(()));
         }
         let res = self.octets.range(self.pos, end);
         self.pos = end;
@@ -275,8 +275,8 @@ impl<Ref: AsRef<[u8]>> Parser<Ref> {
 //--------- ShortInput -------------------------------------------------------
 
 /// An attempt was made to go beyond the end of the parser.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct ShortInput;
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct ShortInput(());
 
 //--- Display and Error
 

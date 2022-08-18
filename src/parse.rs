@@ -289,3 +289,144 @@ impl fmt::Display for ShortInput {
 #[cfg(feature = "std")]
 impl std::error::Error for ShortInput {}
 
+
+//============ Testing =======================================================
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn pos_seek_remaining() {
+        let mut parser = Parser::from_static(b"0123456789");
+        assert_eq!(parser.peek(1).unwrap(), b"0");
+        assert_eq!(parser.pos(), 0);
+        assert_eq!(parser.remaining(), 10);
+        assert_eq!(parser.seek(2), Ok(()));
+        assert_eq!(parser.pos(), 2);
+        assert_eq!(parser.remaining(), 8);
+        assert_eq!(parser.peek(1).unwrap(), b"2");
+        assert_eq!(parser.seek(10), Ok(()));
+        assert_eq!(parser.pos(), 10);
+        assert_eq!(parser.remaining(), 0);
+        assert_eq!(parser.peek_all(), b"");
+        assert!(parser.seek(11).is_err());
+        assert_eq!(parser.pos(), 10);
+        assert_eq!(parser.remaining(), 0);
+    }
+
+    #[test]
+    fn peek_check_len() {
+        let mut parser = Parser::from_static(b"0123456789");
+        assert_eq!(parser.peek(2), Ok(b"01".as_ref()));
+        assert_eq!(parser.check_len(2), Ok(()));
+        assert_eq!(parser.peek(10), Ok(b"0123456789".as_ref()));
+        assert_eq!(parser.check_len(10), Ok(()));
+        assert!(parser.peek(11).is_err());
+        assert!(parser.check_len(11).is_err());
+        parser.advance(2).unwrap();
+        assert_eq!(parser.peek(2), Ok(b"23".as_ref()));
+        assert_eq!(parser.check_len(2), Ok(()));
+        assert_eq!(parser.peek(8), Ok(b"23456789".as_ref()));
+        assert_eq!(parser.check_len(8), Ok(()));
+        assert!(parser.peek(9).is_err());
+        assert!(parser.check_len(9).is_err());
+    }
+
+    #[test]
+    fn peek_all() {
+        let mut parser = Parser::from_static(b"0123456789");
+        assert_eq!(parser.peek_all(), b"0123456789");
+        parser.advance(2).unwrap();
+        assert_eq!(parser.peek_all(), b"23456789");
+    }
+
+    #[test]
+    fn advance() {
+        let mut parser = Parser::from_static(b"0123456789");
+        assert_eq!(parser.pos(), 0);
+        assert_eq!(parser.peek(1).unwrap(), b"0");
+        assert_eq!(parser.advance(2), Ok(()));
+        assert_eq!(parser.pos(), 2);
+        assert_eq!(parser.peek(1).unwrap(), b"2");
+        assert!(parser.advance(9).is_err());
+        assert_eq!(parser.advance(8), Ok(()));
+        assert_eq!(parser.pos(), 10);
+        assert_eq!(parser.peek_all(), b"");
+    }
+
+    #[test]
+    fn parse_octets() {
+        let mut parser = Parser::from_static(b"0123456789");
+        assert_eq!(parser.parse_octets(2).unwrap(), b"01");
+        assert_eq!(parser.parse_octets(2).unwrap(), b"23");
+        assert!(parser.parse_octets(7).is_err());
+        assert_eq!(parser.parse_octets(6).unwrap(), b"456789");
+    }
+
+    #[test]
+    fn parse_buf() {
+        let mut parser = Parser::from_static(b"0123456789");
+        let mut buf = [0u8; 2];
+        assert_eq!(parser.parse_buf(&mut buf), Ok(()));
+        assert_eq!(&buf, b"01");
+        assert_eq!(parser.parse_buf(&mut buf), Ok(()));
+        assert_eq!(&buf, b"23");
+        let mut buf = [0u8; 7];
+        assert!(parser.parse_buf(&mut buf).is_err());
+        let mut buf = [0u8; 6];
+        assert_eq!(parser.parse_buf(&mut buf), Ok(()));
+        assert_eq!(&buf, b"456789");
+    }
+
+    #[test]
+    fn parse_i8() {
+        let mut parser = Parser::from_static(b"\x12\xd6");
+        assert_eq!(parser.parse_i8(), Ok(0x12));
+        assert_eq!(parser.parse_i8(), Ok(-42));
+        assert!(parser.parse_i8().is_err());
+    }
+
+    #[test]
+    fn parse_u8() {
+        let mut parser = Parser::from_static(b"\x12\xd6");
+        assert_eq!(parser.parse_u8(), Ok(0x12));
+        assert_eq!(parser.parse_u8(), Ok(0xd6));
+        assert!(parser.parse_u8().is_err());
+    }
+
+    #[test]
+    fn parse_i16() {
+        let mut parser = Parser::from_static(b"\x12\x34\xef\x6e\0");
+        assert_eq!(parser.parse_i16(), Ok(0x1234));
+        assert_eq!(parser.parse_i16(), Ok(-4242));
+        assert!(parser.parse_i16().is_err());
+    }
+
+    #[test]
+    fn parse_u16() {
+        let mut parser = Parser::from_static(b"\x12\x34\xef\x6e\0");
+        assert_eq!(parser.parse_u16(), Ok(0x1234));
+        assert_eq!(parser.parse_u16(), Ok(0xef6e));
+        assert!(parser.parse_u16().is_err());
+    }
+
+    #[test]
+    fn parse_i32() {
+        let mut parser =
+            Parser::from_static(b"\x12\x34\x56\x78\xfd\x78\xa8\x4e\0\0\0");
+        assert_eq!(parser.parse_i32(), Ok(0x12345678));
+        assert_eq!(parser.parse_i32(), Ok(-42424242));
+        assert!(parser.parse_i32().is_err());
+    }
+
+    #[test]
+    fn parse_u32() {
+        let mut parser =
+            Parser::from_static(b"\x12\x34\x56\x78\xfd\x78\xa8\x4e\0\0\0");
+        assert_eq!(parser.parse_u32(), Ok(0x12345678));
+        assert_eq!(parser.parse_u32(), Ok(0xfd78a84e));
+        assert!(parser.parse_u32().is_err());
+    }
+}
+

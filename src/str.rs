@@ -216,7 +216,7 @@ impl<Octets> StrBuilder<Octets> {
         StrBuilder(Octets::empty())
     }
 
-    /// Creates a new, empty string builder with at a given minimum capacity.
+    /// Creates a new, empty string builder with a given minimum capacity.
     pub fn with_capacity(capacity: usize) -> Self
     where Octets: EmptyBuilder {
         StrBuilder(Octets::with_capacity(capacity))
@@ -241,7 +241,7 @@ impl<Octets> StrBuilder<Octets> {
     /// If the octets builder contains invalid octets, they are replaced with
     /// `U+FFFD REPLACEMENT CHARACTER`.
     ///
-    /// If the contents is UTF-8 encoded, it will remain unchanged. Otherwise,
+    /// If the content is UTF-8 encoded, it will remain unchanged. Otherwise,
     /// a new builder is created and the passed builder is dropped.
     pub fn try_from_utf8_lossy(
         octets: Octets
@@ -275,7 +275,7 @@ impl<Octets> StrBuilder<Octets> {
         Ok(Self(res))
     }
 
-    /// Converts on octets builder into a string builder.
+    /// Converts an octets builder into a string builder.
     ///
     /// This is a simpler version of
     /// [try_from_utf8_lossy][Self::try_from_utf8_lossy]

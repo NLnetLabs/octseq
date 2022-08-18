@@ -182,7 +182,7 @@ impl<const N: usize> FromBuilder for Array<N> {
 
 //--- OctetsFrom
 
-impl<const N: usize, Source: AsRef<[u8]>> OctetsFrom<Source> for Array<N> {
+impl<Source: AsRef<[u8]>, const N: usize> OctetsFrom<Source> for Array<N> {
     type Error = ShortBuf;
 
     fn try_octets_from(source: Source) -> Result<Self, Self::Error> {

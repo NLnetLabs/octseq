@@ -44,7 +44,7 @@
 //! could be defined like so:
 //!
 //! ```
-//! # use octets::OctetsRef;
+//! # use octseq::OctetsRef;
 //!
 //! fn take_part<'a, Octets>(
 //!     src: &'a Octets

@@ -29,6 +29,11 @@ impl<Octets> Str<Octets> {
     }
 
     /// Converts a sequence of octets into a string without checking.
+    ///
+    /// # Safety
+    ///
+    /// The caller must make sure that the contents of `octets` is a
+    /// correctly encoded UTF-8 string.
     pub unsafe fn from_utf8_unchecked(octets: Octets) -> Self {
         Self(octets)
     }
@@ -264,7 +269,7 @@ impl<Octets> StrBuilder<Octets> {
                 Some(len) => &octets[err.valid_up_to() + len ..],
                 None => b""
             };
-            err = match str::from_utf8(octets.as_ref()) {
+            err = match str::from_utf8(octets) {
                 Ok(_) => {
                     res.try_append_slice(octets)?;
                     break;
@@ -407,6 +412,15 @@ impl<Octets> StrBuilder<Octets> {
         let ch = self.as_str().chars().rev().next()?;
         self.truncate(self.len() - ch.len_utf8());
         Some(ch)
+    }
+}
+
+
+//-- Default
+
+impl<Octets: EmptyBuilder> Default for StrBuilder<Octets> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

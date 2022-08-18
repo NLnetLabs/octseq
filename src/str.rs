@@ -580,3 +580,74 @@ impl<Octets> fmt::Display for FromUtf8Error<Octets> {
 impl<Octets> std::error::Error for FromUtf8Error<Octets> {}
 
 
+//============ Testing =======================================================
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    // Most of the test cases herein have been borrowed from the test cases
+    // of the Rust standard library.
+
+    #[test]
+    #[cfg(feature = "std")]
+    fn from_utf8_lossy() {
+        fn check(src: impl AsRef<[u8]>) {
+            assert_eq!(
+                StrBuilder::from_utf8_lossy(std::vec::Vec::from(src.as_ref())),
+                std::string::String::from_utf8_lossy(src.as_ref())
+            );
+        }
+
+        check(b"hello");
+        check("ศไทย中华Việt Nam");
+        check(b"Hello\xC2 There\xFF Goodbye");
+        check(b"Hello\xC0\x80 There\xE6\x83 Goodbye");
+        check(b"\xF5foo\xF5\x80bar");
+        check(b"\xF1foo\xF1\x80bar\xF1\x80\x80baz");
+        check(b"\xF4foo\xF4\x80bar\xF4\xBFbaz");
+        check(b"\xF0\x80\x80\x80foo\xF0\x90\x80\x80bar");
+        check(b"\xED\xA0\x80foo\xED\xBF\xBFbar");
+    }
+
+    #[test]
+    #[cfg(feature = "std")]
+    fn push_str() {
+        let mut s = StrBuilder::<std::vec::Vec<u8>>::new();
+        s.push_str("");
+        assert_eq!(&s[0..], "");
+        s.push_str("abc");
+        assert_eq!(&s[0..], "abc");
+        s.push_str("ประเทศไทย中华Việt Nam");
+        assert_eq!(&s[0..], "abcประเทศไทย中华Việt Nam");
+    }
+
+    #[test]
+    #[cfg(feature = "std")]
+    fn push() {
+        let mut data = StrBuilder::from_utf8(
+            std::vec::Vec::from("ประเทศไทย中".as_bytes())
+        ).unwrap();
+        data.push('华');
+        data.push('b'); // 1 byte
+        data.push('¢'); // 2 byte
+        data.push('€'); // 3 byte
+        data.push('𤭢'); // 4 byte
+        assert_eq!(data, "ประเทศไทย中华b¢€𤭢");
+    }
+
+    #[test]
+    #[cfg(feature = "std")]
+    fn pop() {
+        let mut data = StrBuilder::from_utf8(
+            std::vec::Vec::from("ประเทศไทย中华b¢€𤭢".as_bytes())
+        ).unwrap();
+        assert_eq!(data.pop().unwrap(), '𤭢'); // 4 bytes
+        assert_eq!(data.pop().unwrap(), '€'); // 3 bytes
+        assert_eq!(data.pop().unwrap(), '¢'); // 2 bytes
+        assert_eq!(data.pop().unwrap(), 'b'); // 1 bytes
+        assert_eq!(data.pop().unwrap(), '华');
+        assert_eq!(data, "ประเทศไทย中");
+    }
+}
+

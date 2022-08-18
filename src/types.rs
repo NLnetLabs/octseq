@@ -1,7 +1,7 @@
 
 use core::{cmp, fmt};
 use crate::traits::{
-    EmptyBuilder, FromBuilder, IntoBuilder, OctetsBuilder,
+    EmptyBuilder, FromBuilder, IntoBuilder, OctetsBuilder, OctetsFrom,
     ShortBuf, Truncate,
 };
 
@@ -176,6 +176,17 @@ impl<const N: usize> FromBuilder for Array<N> {
 
     fn from_builder(builder: Self::Builder) -> Self {
         builder
+    }
+}
+
+
+//--- OctetsFrom
+
+impl<const N: usize, Source: AsRef<[u8]>> OctetsFrom<Source> for Array<N> {
+    type Error = ShortBuf;
+
+    fn try_octets_from(source: Source) -> Result<Self, Self::Error> {
+        Self::try_from(source.as_ref())
     }
 }
 

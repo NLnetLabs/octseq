@@ -380,7 +380,7 @@ impl<Octets> StrBuilder<Octets> {
         self.0.append_slice(ch.encode_utf8(&mut buf).as_bytes())
     }
 
-    /// Truncates the builder back to the given index.
+    /// Truncates the builder, keeping the first `new_len` octets.
     ///
     /// # Panics
     ///

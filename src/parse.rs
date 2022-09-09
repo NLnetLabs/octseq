@@ -202,6 +202,24 @@ impl<Ref: AsRef<[u8]>> Parser<Ref> {
         Ok(())
     }
 
+    /// Takes as many octets as requested and returns a parser for them.
+    ///
+    /// If enough octets are remaining, the method clones `self`, limits
+    /// its length to the requested number of octets, and returns it. The
+    /// returned parser will be positioned at wherever `self` was positioned.
+    /// The `self` parser will be advanced by the requested amount of octets.
+    ///
+    /// If there aren’t enough octets left in the parser to fill the buffer
+    /// completely, returns an error and leaves the parser untouched.
+    pub fn parse_parser(&mut self, len: usize) -> Result<Self, ShortInput>
+    where Ref: Clone {
+        self.check_len(len)?;
+        let mut res = self.clone();
+        res.len = res.pos + len;
+        self.pos += len;
+        Ok(res)
+    }
+
     /// Takes an `i8` from the beginning of the parser.
     ///
     /// Advances the parser by one octet. If there aren’t enough octets left,

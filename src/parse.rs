@@ -306,6 +306,7 @@ impl<Ref: AsRef<[u8]>> Parser<Ref> {
     /// The value is created using a constructor from [`Ipv4Addr`]. The parser
     /// is advanced by four octets. If there aren't enough octets left, leaves
     /// the parser untouched and returns an error instead.
+    #[cfg(feature = "std")] 
     pub fn parse_ipv4addr(&mut self) -> Result<Ipv4Addr, ShortInput> {
         self.check_len(4)?;
         Ok(Ipv4Addr::new(
@@ -321,6 +322,7 @@ impl<Ref: AsRef<[u8]>> Parser<Ref> {
     /// The value is created using a constructor from [`Ipv6Addr`]. The parser
     /// is advanced by sixteen octets. If there aren't enough octets left,
     /// leaves the parser untouched and returns an error instead.
+    #[cfg(feature = "std")] 
     pub fn parse_ipv6addr(&mut self) -> Result<Ipv6Addr, ShortInput> {
         let mut buf = [0u8; 16];
         self.parse_buf(&mut buf)?;

@@ -6,6 +6,7 @@
 
 use core::fmt;
 use super::traits::OctetsRef;
+use std::net::{Ipv4Addr, Ipv6Addr};
 
 //------------ Parser --------------------------------------------------------
 
@@ -286,6 +287,44 @@ impl<Ref: AsRef<[u8]>> Parser<Ref> {
         let mut res = [0; 4];
         self.parse_buf(&mut res)?;
         Ok(u32::from_be_bytes(res))
+    }
+
+    /// Takes a `u64` from the beginning of the parser.
+    ///
+    /// The value is converted from network byte order into the system’s own
+    /// byte order if necessary. The parser is advanced by four octets. If
+    /// there aren’t enough octets left, leaves the parser untouched and
+    /// returns an error instead.
+    pub fn parse_u64(&mut self) -> Result<u64, ShortInput> {
+        let mut res = [0; 8];
+        self.parse_buf(&mut res)?;
+        Ok(u64::from_be_bytes(res))
+    }
+
+    /// Takes a [`Ipv4Addr`] from the beginning of the parser.
+    ///
+    /// The value is created using a constructor from [`Ipv4Addr`]. The parser
+    /// is advanced by four octets. If there aren't enough octets left, leaves
+    /// the parser untouched and returns an error instead.
+    pub fn parse_ipv4addr(&mut self) -> Result<Ipv4Addr, ShortInput> {
+        self.check_len(4)?;
+        Ok(Ipv4Addr::new(
+                self.parse_u8()?,
+                self.parse_u8()?,
+                self.parse_u8()?,
+                self.parse_u8()?,
+        ))
+    }
+
+    /// Takes a [`Ipv6Addr`] from the beginning of the parser.
+    ///
+    /// The value is created using a constructor from [`Ipv6Addr`]. The parser
+    /// is advanced by sixteen octets. If there aren't enough octets left,
+    /// leaves the parser untouched and returns an error instead.
+    pub fn parse_ipv6addr(&mut self) -> Result<Ipv6Addr, ShortInput> {
+        let mut buf = [0u8; 16];
+        self.parse_buf(&mut buf)?;
+        Ok(buf.into())
     }
 }
 

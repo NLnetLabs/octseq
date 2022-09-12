@@ -289,6 +289,18 @@ impl<Ref: AsRef<[u8]>> Parser<Ref> {
         Ok(u32::from_be_bytes(res))
     }
 
+    /// Takes an `i64` from the beginning of the parser.
+    ///
+    /// The value is converted from network byte order into the system’s own
+    /// byte order if necessary. The parser is advanced by eight octets. If
+    /// there aren’t enough octets left, leaves the parser untouched and
+    /// returns an error instead.
+    pub fn parse_i64(&mut self) -> Result<i64, ShortInput> {
+        let mut res = [0; 8];
+        self.parse_buf(&mut res)?;
+        Ok(i64::from_be_bytes(res))
+    }
+
     /// Takes a `u64` from the beginning of the parser.
     ///
     /// The value is converted from network byte order into the system’s own
@@ -299,6 +311,30 @@ impl<Ref: AsRef<[u8]>> Parser<Ref> {
         let mut res = [0; 8];
         self.parse_buf(&mut res)?;
         Ok(u64::from_be_bytes(res))
+    }
+
+    /// Takes a `i128` from the beginning of the parser.
+    ///
+    /// The value is converted from network byte order into the system’s own
+    /// byte order if necessary. The parser is advanced by sixteen octets. If
+    /// there aren’t enough octets left, leaves the parser untouched and
+    /// returns an error instead.
+    pub fn parse_i128(&mut self) -> Result<i128, ShortInput> {
+        let mut res = [0; 16];
+        self.parse_buf(&mut res)?;
+        Ok(i128::from_be_bytes(res))
+    }
+
+    /// Takes a `u128` from the beginning of the parser.
+    ///
+    /// The value is converted from network byte order into the system’s own
+    /// byte order if necessary. The parser is advanced by sixteen octets. If
+    /// there aren’t enough octets left, leaves the parser untouched and
+    /// returns an error instead.
+    pub fn parse_u128(&mut self) -> Result<u128, ShortInput> {
+        let mut res = [0; 16];
+        self.parse_buf(&mut res)?;
+        Ok(u128::from_be_bytes(res))
     }
 
     /// Takes a [`Ipv4Addr`] from the beginning of the parser.

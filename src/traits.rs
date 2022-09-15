@@ -14,50 +14,7 @@
 //!
 //! # Octets
 //!
-//! There is no special trait for octets, we simply use `AsRef<[u8]>`. This
-//! way, any type implementing these traits can be used as a basic octets
-//! already. Additional properties are signalled through additional traits.
-//! `AsMut<[u8]>` is used to signal the ability to manipulate the contents of
-//! an octets sequence (while the length is still fixed). The trait
-//! [`Truncate`] introduced by the crate signals that an octets sequence can
-//! be shortened.
-//!
-//! # Octets References
-//!
-//! A reference to an octets type implements [`OctetsRef`]. The main purpose
-//! of this trait is to allow taking a sub-sequence, called a ‘range’,
-//! out of the octets in the cheapest way possible. For most types, ranges
-//! will be octet slices `&[u8]` but some shareable types (most notably
-//! `bytes::Bytes`) allow ranges to be owned values, thus avoiding the
-//! lifetime limitations a slice would bring.
-//!
-//! One type is special in that it is its own octets reference: `&[u8]`,
-//! referred to as an _octets slice_ here. This means that you
-//! always use an octets slice regardless of whether a type is generic over
-//! an octets sequence or an octets reference.
-//!
-//! The [`OctetsRef`] trait is separate because of limitations of lifetimes
-//! in traits. It has an associated type `OctetsRef::Range` that defines the
-//! type of a range. When using the trait as a trait bound for a generic type,
-//! you will typically use a reference to this type. For instance, a generic
-//! function taking part out of some octets and returning a reference to it
-//! could be defined like so:
-//!
-//! ```
-//! # use octseq::OctetsRef;
-//!
-//! fn take_part<'a, Octets>(
-//!     src: &'a Octets
-//! ) -> <&'a Octets as OctetsRef>::Range
-//! where &'a Octets: OctetsRef {
-//!     unimplemented!()
-//! }
-//! ```
-//!
-//! The where clause demands that whatever octets type is being used, a
-//! reference to it must be an octets ref. The return value refers to the
-//! range type defined for this octets ref. The lifetime argument is
-//! necessary to tie all these references together.
+//! XXX TODO
 //!
 //!
 //! # Octets Builders

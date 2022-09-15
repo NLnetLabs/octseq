@@ -5,7 +5,7 @@
 //! ref and allows to parse values from the octets.
 
 use core::fmt;
-use super::traits::OctetsRef;
+use super::traits::Octets;
 
 //------------ Parser --------------------------------------------------------
 
@@ -16,10 +16,10 @@ use super::traits::OctetsRef;
 /// the position beyond processed data.
 ///
 /// [octets reference]: trait.OctetsRef.html
-#[derive(Clone, Copy, Debug)]
-pub struct Parser<Ref> {
+#[derive(Debug)]
+pub struct Parser<'a, Octs: ?Sized> {
     /// The underlying octets reference.
-    octets: Ref,
+    octets: &'a Octs,
 
     /// The current position of the parser from the beginning of `octets`.
     pos: usize,
@@ -32,11 +32,11 @@ pub struct Parser<Ref> {
     len: usize,
 }
 
-impl<Ref> Parser<Ref> {
+impl<'a, Octs: ?Sized> Parser<'a, Octs> {
     /// Creates a new parser atop a reference to an octet sequence.
-    pub fn from_ref(octets: Ref) -> Self
+    pub fn from_ref(octets: &'a Octs) -> Self
     where
-        Ref: AsRef<[u8]>,
+        Octs: Octets,
     {
         Parser {
             pos: 0,
@@ -46,10 +46,7 @@ impl<Ref> Parser<Ref> {
     }
 
     /// Returns the wrapped reference to the underlying octets sequence.
-    pub fn octets_ref(&self) -> Ref
-    where
-        Ref: Copy,
-    {
+    pub fn octets_ref(&self) -> &'a Octs {
         self.octets
     }
 
@@ -76,7 +73,7 @@ impl<Ref> Parser<Ref> {
     }
 }
 
-impl Parser<&'static [u8]> {
+impl Parser<'static, [u8]> {
     /// Creates a new parser atop a static byte slice.
     ///
     /// This function is most useful for testing.
@@ -85,7 +82,7 @@ impl Parser<&'static [u8]> {
     }
 }
 
-impl<Ref: AsRef<[u8]>> Parser<Ref> {
+impl<'a, Octs: AsRef<[u8]> + ?Sized> Parser<'a, Octs> {
     /// Returns an octets slice of the underlying sequence.
     ///
     /// The slice covers the entire sequence, not just the remaining data. You
@@ -94,16 +91,6 @@ impl<Ref: AsRef<[u8]>> Parser<Ref> {
     /// [`peek`]: #method.peek
     pub fn as_slice(&self) -> &[u8] {
         &self.octets.as_ref()[..self.len]
-    }
-
-    /// Returns a mutable octets slice of the underlying sequence.
-    ///
-    /// The slice covers the entire sequence, not just the remaining data.
-    pub fn as_slice_mut(&mut self) -> &mut [u8]
-    where
-        Ref: AsMut<[u8]>,
-    {
-        &mut self.octets.as_mut()[..self.len]
     }
 
     /// Returns the number of remaining octets to parse.
@@ -167,7 +154,7 @@ impl<Ref: AsRef<[u8]>> Parser<Ref> {
     }
 }
 
-impl<Ref: AsRef<[u8]>> Parser<Ref> {
+impl<'a, Octs: AsRef<[u8]> + ?Sized> Parser<'a, Octs> {
     /// Takes and returns the next `len` octets.
     ///
     /// Advances the parser by `len` octets. If there aren’t enough octets
@@ -175,9 +162,9 @@ impl<Ref: AsRef<[u8]>> Parser<Ref> {
     pub fn parse_octets(
         &mut self,
         len: usize,
-    ) -> Result<Ref::Range, ShortInput>
+    ) -> Result<Octs::Range<'a>, ShortInput>
     where
-        Ref: OctetsRef,
+        Octs: Octets,
     {
         let end = self.pos + len;
         if end > self.len {
@@ -211,8 +198,7 @@ impl<Ref: AsRef<[u8]>> Parser<Ref> {
     ///
     /// If there aren’t enough octets left in the parser to fill the buffer
     /// completely, returns an error and leaves the parser untouched.
-    pub fn parse_parser(&mut self, len: usize) -> Result<Self, ShortInput>
-    where Ref: Clone {
+    pub fn parse_parser(&mut self, len: usize) -> Result<Self, ShortInput> {
         self.check_len(len)?;
         let mut res = self.clone();
         res.len = res.pos + len;
@@ -334,6 +320,16 @@ impl<Ref: AsRef<[u8]>> Parser<Ref> {
         let mut res = [0; 16];
         self.parse_buf(&mut res)?;
         Ok(u128::from_be_bytes(res))
+    }
+}
+
+impl<'a, Octs: ?Sized> Clone for Parser<'a, Octs> {
+    fn clone(&self) -> Self {
+        Parser {
+            octets: self.octets,
+            pos: self.pos,
+            len: self.len
+        }
     }
 }
 

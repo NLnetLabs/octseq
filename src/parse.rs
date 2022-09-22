@@ -338,6 +338,40 @@ impl<Ref: AsRef<[u8]>> Parser<Ref> {
 }
 
 
+//--------- IpAddr parse functions -------------------------------------------
+#[cfg(feature = "std")] 
+use std::net::{Ipv4Addr, Ipv6Addr};
+
+/// Takes a [`Ipv4Addr`] from the beginning of the parser.
+///
+/// The value is created using a constructor from [`Ipv4Addr`]. The parser
+/// is advanced by four octets. If there aren't enough octets left, leaves
+/// the parser untouched and returns an error instead.
+#[cfg(feature = "std")] 
+impl<Ref: AsRef<[u8]>> Parser<Ref> {
+    pub fn parse_ipv4addr(&mut self) -> Result<Ipv4Addr, ShortInput> {
+        self.check_len(4)?;
+        Ok(Ipv4Addr::new(
+                self.parse_u8()?,
+                self.parse_u8()?,
+                self.parse_u8()?,
+                self.parse_u8()?,
+        ))
+    }
+
+    /// Takes a [`Ipv6Addr`] from the beginning of the parser.
+    ///
+    /// The value is created using a constructor from [`Ipv6Addr`]. The parser
+    /// is advanced by sixteen octets. If there aren't enough octets left,
+    /// leaves the parser untouched and returns an error instead.
+    pub fn parse_ipv6addr(&mut self) -> Result<Ipv6Addr, ShortInput> {
+        let mut buf = [0u8; 16];
+        self.parse_buf(&mut buf)?;
+        Ok(buf.into())
+    }
+}
+
+
 //--------- ShortInput -------------------------------------------------------
 
 /// An attempt was made to go beyond the end of the parser.
@@ -495,4 +529,3 @@ mod test {
         assert!(parser.parse_u32().is_err());
     }
 }
-

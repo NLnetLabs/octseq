@@ -12,9 +12,6 @@
 //! been encoded into an octet sequences. This has been dubbed _parsing_ and
 //! is provided via the [_parse_] module.
 
-// XXX Only merge once this can removed.
-#![feature(generic_associated_types)]
-
 #![no_std]
 #![allow(renamed_and_removed_lints)]
 #![allow(clippy::unknown_clippy_lints)]

@@ -14,8 +14,16 @@
 //!
 //! # Octets
 //!
-//! XXX TODO
+//! In their most simple form, any type that implements `AsRef<[u8]>` can
+//! serve as octets. However, in some cases additional functionality is
+//! required.
 //!
+//! The trait [`Octets`] allows taking a sub-sequence, called a ‘range’, out
+//! of the octets in the cheapest way possible. For most types, ranges will
+//! be octet slices `&[u8]` but some shareable types (most notably
+//! `bytes::Bytes`) allow ranges to be owned values, thus avoiding the
+//! lifetime limitations a slice would bring. Therefore, `Octets` allows
+//! defining the type of a range as an associated type.
 //!
 //! # Octets Builders
 //!
@@ -63,7 +71,7 @@
 //! eager you may paint yourself into a corner.
 //!
 //! In many cases you can get away with a simple `AsRef<[u8]>` bound. Only use
-//! an explicit `OctetsRef` bound when you need to return a range that may be
+//! an explicit `Octets` bound when you need to return a range that may be
 //! kept around.
 //!
 //! Similarly, only demand of an octets builder what you actually need. Even

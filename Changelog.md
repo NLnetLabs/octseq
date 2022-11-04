@@ -4,6 +4,9 @@
 
 Breaking Changes
 
+* Drop the `OctetsRef` trait and introduce a new `Octets` trait that takes
+  over its purpose. This requires Rust 1.65.0. ([#12])
+
 New
 
 * Added `Parser::parse_parser` that allows parsing a given number of octets
@@ -16,6 +19,7 @@ Other Changes
 
 [#10]: https://github.com/NLnetLabs/octseq/pull/10
 [#11]: https://github.com/NLnetLabs/octseq/pull/11
+[#12]: https://github.com/NLnetLabs/octseq/pull/12
 
 
 ## 0.1.0

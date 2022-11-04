@@ -91,17 +91,40 @@ use core::convert::Infallible;
 
 //------------ Octets --------------------------------------------------------
 
+/// A type representing an octets sequence.
+///
+/// The primary purpose of the trait is to allow access to a sub-sequence,
+/// called a ‘range.’ The type of this range is given via the `Range`
+/// associated type. For most types it will be a `&[u8]` with a lifetime
+/// equal to that of a reference. Only if an owned range can be created
+/// cheaply, it should be that type.
 pub trait Octets: AsRef<[u8]> {
     type Range<'a>: Octets where Self: 'a;
 
+    /// Returns a sub-sequence or ‘range’ of the sequence.
+    ///
+    /// # Panics
+    ///
+    /// The method should panic if `start` or `end` are greater than the
+    /// length of the octets sequence or if `start` is greater than `end`.
     fn range(&self, start: usize, end: usize) -> Self::Range<'_>;
 
     /// Returns a range starting at index `start` and going to the end.
+    ///
+    /// # Panics
+    ///
+    /// The method should panic if `start` is greater than the
+    /// length of the octets sequence.
     fn range_from(&self, start: usize) -> Self::Range<'_> {
         self.range(start, self.as_ref().len())
     }
 
     /// Returns a range from the start to before index `end`.
+    ///
+    /// # Panics
+    ///
+    /// The method should panic if `end` is greater than the
+    /// length of the octets sequence.
     fn range_to(&self, end: usize) -> Self::Range<'_> {
         self.range(0, end)
     }

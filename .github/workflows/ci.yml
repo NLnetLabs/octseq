@@ -7,7 +7,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macOS-latest]
-        rust: [1.56.1, stable, beta, nightly]
+        rust: [1.65.0, stable, beta, nightly]
     steps:
     - name: Checkout repository
       uses: actions/checkout@v1
@@ -25,9 +25,9 @@ jobs:
     # Only do this once with all features enabled.
     # Only do Clippy on stable for the moment, due to
     # clippy::unknown_clippy_lints being removed.
-    - if: matrix.rust == 'stable'
+    - if: matrix.rust == 'nightly'
       run: rustup component add clippy
-    - if: matrix.rust == 'stable'
+    - if: matrix.rust == 'nightyl'
       run: cargo clippy --all --all-features -- -D warnings
 
     # Build

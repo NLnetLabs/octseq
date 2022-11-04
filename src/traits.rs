@@ -14,51 +14,16 @@
 //!
 //! # Octets
 //!
-//! There is no special trait for octets, we simply use `AsRef<[u8]>`. This
-//! way, any type implementing these traits can be used as a basic octets
-//! already. Additional properties are signalled through additional traits.
-//! `AsMut<[u8]>` is used to signal the ability to manipulate the contents of
-//! an octets sequence (while the length is still fixed). The trait
-//! [`Truncate`] introduced by the crate signals that an octets sequence can
-//! be shortened.
+//! In their most simple form, any type that implements `AsRef<[u8]>` can
+//! serve as octets. However, in some cases additional functionality is
+//! required.
 //!
-//! # Octets References
-//!
-//! A reference to an octets type implements [`OctetsRef`]. The main purpose
-//! of this trait is to allow taking a sub-sequence, called a ‘range’,
-//! out of the octets in the cheapest way possible. For most types, ranges
-//! will be octet slices `&[u8]` but some shareable types (most notably
+//! The trait [`Octets`] allows taking a sub-sequence, called a ‘range’, out
+//! of the octets in the cheapest way possible. For most types, ranges will
+//! be octet slices `&[u8]` but some shareable types (most notably
 //! `bytes::Bytes`) allow ranges to be owned values, thus avoiding the
-//! lifetime limitations a slice would bring.
-//!
-//! One type is special in that it is its own octets reference: `&[u8]`,
-//! referred to as an _octets slice_ here. This means that you
-//! always use an octets slice regardless of whether a type is generic over
-//! an octets sequence or an octets reference.
-//!
-//! The [`OctetsRef`] trait is separate because of limitations of lifetimes
-//! in traits. It has an associated type `OctetsRef::Range` that defines the
-//! type of a range. When using the trait as a trait bound for a generic type,
-//! you will typically use a reference to this type. For instance, a generic
-//! function taking part out of some octets and returning a reference to it
-//! could be defined like so:
-//!
-//! ```
-//! # use octseq::OctetsRef;
-//!
-//! fn take_part<'a, Octets>(
-//!     src: &'a Octets
-//! ) -> <&'a Octets as OctetsRef>::Range
-//! where &'a Octets: OctetsRef {
-//!     unimplemented!()
-//! }
-//! ```
-//!
-//! The where clause demands that whatever octets type is being used, a
-//! reference to it must be an octets ref. The return value refers to the
-//! range type defined for this octets ref. The lifetime argument is
-//! necessary to tie all these references together.
-//!
+//! lifetime limitations a slice would bring. Therefore, `Octets` allows
+//! defining the type of a range as an associated type.
 //!
 //! # Octets Builders
 //!
@@ -106,7 +71,7 @@
 //! eager you may paint yourself into a corner.
 //!
 //! In many cases you can get away with a simple `AsRef<[u8]>` bound. Only use
-//! an explicit `OctetsRef` bound when you need to return a range that may be
+//! an explicit `Octets` bound when you need to return a range that may be
 //! kept around.
 //!
 //! Similarly, only demand of an octets builder what you actually need. Even
@@ -124,109 +89,104 @@ use core::convert::Infallible;
 
 //============ Octets and Octet Builders =====================================
 
+//------------ Octets --------------------------------------------------------
 
-//------------ OctetsRef -----------------------------------------------------
-
-/// A reference to an octets sequence.
-///
-/// This trait is to be implemented for a (immutable) reference to a type of
-/// an octets sequence. I.e., it `T` is an octets sequence, `OctetsRef` needs
-/// to be implemented for `&T`.
+/// A type representing an octets sequence.
 ///
 /// The primary purpose of the trait is to allow access to a sub-sequence,
 /// called a ‘range.’ The type of this range is given via the `Range`
-/// associated type. For most types it will be a `&[u8]` with a lifetime equal
-/// to that of the reference itself. Only if an owned range can be created
+/// associated type. For most types it will be a `&[u8]` with a lifetime
+/// equal to that of a reference. Only if an owned range can be created
 /// cheaply, it should be that type.
-///
-/// There is two basic ways of using the trait for a trait bound. You can
-/// either limit the octets sequence type itself by bounding references to it
-/// via a where clause. I.e., for an  octets sequence type argument `Octets`
-/// you can specify `where &'a Octets: OctetsRef` or, if you don’t have a
-/// lifetime argument available `where for<'a> &'a Octets: OctetsRef`. For
-/// this option, you’d typically refer to values as references to the
-/// octets type, i.e., `&Octets`.
-///
-/// Alternatively, you can refer to the reference itself as a owned value.
-/// This works out fine since all octets references are required to be
-/// `Copy`. For instance, a function can take a value of generic type `Oref`
-/// and that type can then be directly bounded via `Oref: OctetsRef`.
-pub trait OctetsRef: AsRef<[u8]> + Copy + Sized {
-    /// The type of a range of the sequence.
-    type Range: AsRef<[u8]>;
+pub trait Octets: AsRef<[u8]> {
+    type Range<'a>: Octets where Self: 'a;
 
     /// Returns a sub-sequence or ‘range’ of the sequence.
-    fn range(self, start: usize, end: usize) -> Self::Range;
+    ///
+    /// # Panics
+    ///
+    /// The method should panic if `start` or `end` are greater than the
+    /// length of the octets sequence or if `start` is greater than `end`.
+    fn range(&self, start: usize, end: usize) -> Self::Range<'_>;
 
     /// Returns a range starting at index `start` and going to the end.
-    fn range_from(self, start: usize) -> Self::Range {
+    ///
+    /// # Panics
+    ///
+    /// The method should panic if `start` is greater than the
+    /// length of the octets sequence.
+    fn range_from(&self, start: usize) -> Self::Range<'_> {
         self.range(start, self.as_ref().len())
     }
 
     /// Returns a range from the start to before index `end`.
-    fn range_to(self, end: usize) -> Self::Range {
+    ///
+    /// # Panics
+    ///
+    /// The method should panic if `end` is greater than the
+    /// length of the octets sequence.
+    fn range_to(&self, end: usize) -> Self::Range<'_> {
         self.range(0, end)
     }
 
     /// Returns a range that covers the entire sequence.
-    fn range_all(self) -> Self::Range {
+    fn range_all(&self) -> Self::Range<'_> {
         self.range(0, self.as_ref().len())
     }
 }
 
-impl<'a, T: OctetsRef> OctetsRef for &'a T {
-    type Range = T::Range;
+impl<'t, T: Octets + ?Sized> Octets for &'t T {
+    type Range<'a> = <T as Octets>::Range<'a> where Self: 'a;
 
-    fn range(self, start: usize, end: usize) -> Self::Range {
+    fn range(&self, start: usize, end: usize) -> Self::Range<'_> {
         (*self).range(start, end)
     }
 }
 
-impl<'a> OctetsRef for &'a [u8] {
-    type Range = &'a [u8];
+impl Octets for [u8] {
+    type Range<'a> = &'a [u8];
 
-    fn range(self, start: usize, end: usize) -> Self::Range {
+    fn range(&self, start: usize, end: usize) -> Self::Range<'_> {
         &self[start..end]
     }
 }
 
 #[cfg(feature = "std")]
-impl<'a, 's> OctetsRef for &'a Cow<'s, [u8]> {
-    type Range = &'a [u8];
+impl<'c> Octets for Cow<'c, [u8]> {
+    type Range<'a> = &'a [u8] where Self: 'a;
 
-    fn range(self, start: usize, end: usize) -> Self::Range {
+    fn range(&self, start: usize, end: usize) -> Self::Range<'_> {
         &self.as_ref()[start..end]
     }
 }
 
 #[cfg(feature = "std")]
-impl<'a> OctetsRef for &'a Vec<u8> {
-    type Range = &'a [u8];
+impl Octets for Vec<u8> {
+    type Range<'a> = &'a [u8];
 
-    fn range(self, start: usize, end: usize) -> Self::Range {
+    fn range(&self, start: usize, end: usize) -> Self::Range<'_> {
         &self[start..end]
     }
 }
 
 #[cfg(feature = "bytes")]
-impl<'a> OctetsRef for &'a Bytes {
-    type Range = Bytes;
+impl Octets for Bytes {
+    type Range<'a> = Bytes;
 
-    fn range(self, start: usize, end: usize) -> Self::Range {
+    fn range(&self, start: usize, end: usize) -> Self::Range<'_> {
         self.slice(start..end)
     }
 }
 
 #[cfg(feature = "smallvec")]
-impl<'a, A: smallvec::Array<Item = u8>>
-    OctetsRef for &'a smallvec::SmallVec<A>
-{
-    type Range = &'a [u8];
+impl<A: smallvec::Array<Item = u8>> Octets for smallvec::SmallVec<A> {
+    type Range<'a> = &'a [u8] where A: 'a;
 
-    fn range(self, start: usize, end: usize) -> Self::Range {
+    fn range(&self, start: usize, end: usize) -> Self::Range<'_> {
         &self.as_slice()[start..end]
     }
 }
+
 
 //------------ Truncate ------------------------------------------------------
 

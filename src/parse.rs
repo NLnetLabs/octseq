@@ -170,7 +170,7 @@ impl<'a, Octs: AsRef<[u8]> + ?Sized> Parser<'a, Octs> {
         if end > self.len {
             return Err(ShortInput(()));
         }
-        let res = self.octets.range(self.pos, end);
+        let res = self.octets.range(self.pos..end);
         self.pos = end;
         Ok(res)
     }

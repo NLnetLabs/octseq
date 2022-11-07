@@ -82,6 +82,7 @@
 
 use core::fmt;
 use core::convert::Infallible;
+use core::ops::{Index, RangeBounds};
 #[cfg(feature = "bytes")] use bytes::{Bytes, BytesMut};
 #[cfg(feature = "std")] use std::borrow::Cow;
 #[cfg(feature = "std")] use std::vec::Vec;
@@ -107,47 +108,24 @@ pub trait Octets: AsRef<[u8]> {
     ///
     /// The method should panic if `start` or `end` are greater than the
     /// length of the octets sequence or if `start` is greater than `end`.
-    fn range(&self, start: usize, end: usize) -> Self::Range<'_>;
-
-    /// Returns a range starting at index `start` and going to the end.
-    ///
-    /// # Panics
-    ///
-    /// The method should panic if `start` is greater than the
-    /// length of the octets sequence.
-    fn range_from(&self, start: usize) -> Self::Range<'_> {
-        self.range(start, self.as_ref().len())
-    }
-
-    /// Returns a range from the start to before index `end`.
-    ///
-    /// # Panics
-    ///
-    /// The method should panic if `end` is greater than the
-    /// length of the octets sequence.
-    fn range_to(&self, end: usize) -> Self::Range<'_> {
-        self.range(0, end)
-    }
-
-    /// Returns a range that covers the entire sequence.
-    fn range_all(&self) -> Self::Range<'_> {
-        self.range(0, self.as_ref().len())
-    }
+    fn range(&self, range: impl RangeBounds<usize>) -> Self::Range<'_>;
 }
 
 impl<'t, T: Octets + ?Sized> Octets for &'t T {
     type Range<'a> = <T as Octets>::Range<'a> where Self: 'a;
 
-    fn range(&self, start: usize, end: usize) -> Self::Range<'_> {
-        (*self).range(start, end)
+    fn range(&self, range: impl RangeBounds<usize>) -> Self::Range<'_> {
+        (*self).range(range)
     }
 }
 
 impl Octets for [u8] {
     type Range<'a> = &'a [u8];
 
-    fn range(&self, start: usize, end: usize) -> Self::Range<'_> {
-        &self[start..end]
+    fn range(&self, range: impl RangeBounds<usize>) -> Self::Range<'_> {
+        self.index(
+            (range.start_bound().cloned(), range.end_bound().cloned())
+        )
     }
 }
 
@@ -155,8 +133,8 @@ impl Octets for [u8] {
 impl<'c> Octets for Cow<'c, [u8]> {
     type Range<'a> = &'a [u8] where Self: 'a;
 
-    fn range(&self, start: usize, end: usize) -> Self::Range<'_> {
-        &self.as_ref()[start..end]
+    fn range(&self, range: impl RangeBounds<usize>) -> Self::Range<'_> {
+        self.as_ref().range(range)
     }
 }
 
@@ -164,8 +142,8 @@ impl<'c> Octets for Cow<'c, [u8]> {
 impl Octets for Vec<u8> {
     type Range<'a> = &'a [u8];
 
-    fn range(&self, start: usize, end: usize) -> Self::Range<'_> {
-        &self[start..end]
+    fn range(&self, range: impl RangeBounds<usize>) -> Self::Range<'_> {
+        self.as_slice().range(range)
     }
 }
 
@@ -173,8 +151,8 @@ impl Octets for Vec<u8> {
 impl Octets for Bytes {
     type Range<'a> = Bytes;
 
-    fn range(&self, start: usize, end: usize) -> Self::Range<'_> {
-        self.slice(start..end)
+    fn range(&self, range: impl RangeBounds<usize>) -> Self::Range<'_> {
+        self.slice(range)
     }
 }
 
@@ -182,8 +160,8 @@ impl Octets for Bytes {
 impl<A: smallvec::Array<Item = u8>> Octets for smallvec::SmallVec<A> {
     type Range<'a> = &'a [u8] where A: 'a;
 
-    fn range(&self, start: usize, end: usize) -> Self::Range<'_> {
-        &self.as_slice()[start..end]
+    fn range(&self, range: impl RangeBounds<usize>) -> Self::Range<'_> {
+        self.as_slice().range(range)
     }
 }
 

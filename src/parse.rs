@@ -36,7 +36,7 @@ impl<'a, Octs: ?Sized> Parser<'a, Octs> {
     /// Creates a new parser atop a reference to an octet sequence.
     pub fn from_ref(octets: &'a Octs) -> Self
     where
-        Octs: Octets,
+        Octs: AsRef<[u8]>,
     {
         Parser {
             pos: 0,

@@ -16,7 +16,7 @@ use super::traits::Octets;
 /// the position beyond processed data.
 ///
 /// [octets reference]: trait.OctetsRef.html
-#[derive(Copy, Debug)]
+#[derive(Debug)]
 pub struct Parser<'a, Octs: ?Sized> {
     /// The underlying octets reference.
     octets: &'a Octs,
@@ -323,6 +323,9 @@ impl<'a, Octs: AsRef<[u8]> + ?Sized> Parser<'a, Octs> {
     }
 }
 
+
+//--- Clone and Copy
+
 impl<'a, Octs: ?Sized> Clone for Parser<'a, Octs> {
     fn clone(&self) -> Self {
         Parser {
@@ -332,6 +335,8 @@ impl<'a, Octs: ?Sized> Clone for Parser<'a, Octs> {
         }
     }
 }
+
+impl<'a, Octs: ?Sized> Copy for Parser<'a, Octs> { }
 
 
 //--------- ShortInput -------------------------------------------------------

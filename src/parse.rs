@@ -16,7 +16,7 @@ use super::traits::Octets;
 /// the position beyond processed data.
 ///
 /// [octets reference]: trait.OctetsRef.html
-#[derive(Debug)]
+#[derive(Copy, Debug)]
 pub struct Parser<'a, Octs: ?Sized> {
     /// The underlying octets reference.
     octets: &'a Octs,

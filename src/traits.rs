@@ -166,6 +166,17 @@ impl<A: smallvec::Array<Item = u8>> Octets for smallvec::SmallVec<A> {
 }
 
 
+//------------ Split ---------------------------------------------------------
+
+pub trait Split {
+    fn split(&mut self, mid: usize) -> Self;
+}
+
+impl Octets for [u8] {
+    fn split(&mut self, mid: usize) -> &[u8]
+}
+
+
 //------------ Truncate ------------------------------------------------------
 
 /// An octet sequence that can be shortened.
@@ -694,6 +705,14 @@ impl<A: smallvec::Array<Item = u8>> FromBuilder for smallvec::SmallVec<A> {
 /// [octets builder]: trait.OctetsBuilder.html
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ShortBuf;
+
+//--- From
+
+impl From<Infallible> for ShortBuf {
+    fn from(_: Infallible) -> ShortBuf {
+        unreachable!()
+    }
+}
 
 //--- Display and Error
 

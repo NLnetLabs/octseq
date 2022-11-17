@@ -166,17 +166,6 @@ impl<A: smallvec::Array<Item = u8>> Octets for smallvec::SmallVec<A> {
 }
 
 
-//------------ Split ---------------------------------------------------------
-
-pub trait Split {
-    fn split(&mut self, mid: usize) -> Self;
-}
-
-impl Octets for [u8] {
-    fn split(&mut self, mid: usize) -> &[u8]
-}
-
-
 //------------ Truncate ------------------------------------------------------
 
 /// An octet sequence that can be shortened.

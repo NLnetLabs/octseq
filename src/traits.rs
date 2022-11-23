@@ -360,10 +360,20 @@ pub trait OctetsBuilder {
 
     /// The type of the error that happens when appending data fails.
     ///
+    /// The only error that is allowed to happen is that the builder does
+    /// not have enough space available to append the data. This case is
+    /// covered by [`ShortBuf`] which should be used by octets builders that
+    /// have limited space.
+    ///
     /// For types, such as `Vec<u8>` or `BytesMut` where appending never
     /// fails (other than with an out-of-memory panic), this should be
     /// `Infallible` (or `!` when that becomes stable).
-    type AppendError;
+    ///
+    /// `ShortBuf` has an `impl From<Infallible>`, so requiring
+    /// `Into<ShortBuf>` as a trait bound covers those two types. Doing so
+    /// avoids complicated trait bounds in types being generic over octets
+    /// builders, even if it might seem a bit strange at first.
+    type AppendError: Into<ShortBuf>;
 
     /// Appends the content of a slice to the builder.
     ///

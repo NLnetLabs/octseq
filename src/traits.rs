@@ -208,6 +208,13 @@ impl Truncate for Bytes {
     }
 }
 
+#[cfg(feature = "bytes")]
+impl Truncate for BytesMut {
+    fn truncate(&mut self, len: usize) {
+        self.truncate(len)
+    }
+}
+
 #[cfg(feature = "smallvec")]
 impl<A: smallvec::Array<Item = u8>> Truncate for smallvec::SmallVec<A> {
     fn truncate(&mut self, len: usize) {

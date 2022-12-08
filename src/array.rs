@@ -2,7 +2,8 @@
 use core::{cmp, fmt};
 use core::convert::Infallible;
 use crate::builder::{
-    CollapseResult, EmptyBuilder, FromBuilder, IntoBuilder, OctetsBuilder,
+    EmptyBuilder, FromBuilder, IntoBuilder, OctetsBuilder, ShortBuf,
+    ShortBuild,
 };
 use crate::octets::{OctetsFrom, Truncate};
 
@@ -267,62 +268,6 @@ impl<'de, const N: usize> crate::serde::DeserializeOctets<'de> for Array<N> {
         }
 
         deserializer.deserialize_bytes(Visitor)
-    }
-}
-
-
-//============ Error Types ===================================================
-
-//------------ ShortBuf ------------------------------------------------------
-
-/// An attempt was made to write beyond the end of a buffer.
-///
-/// This type is returned as an error by all functions and methods that append
-/// data to an [octets builder] when the buffer size of the builder is not
-/// sufficient to append the data.
-///
-/// [octets builder]: trait.OctetsBuilder.html
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ShortBuf;
-
-//--- From and CollapseResult
-
-impl From<Infallible> for ShortBuf {
-    fn from(_: Infallible) -> ShortBuf {
-        unreachable!()
-    }
-}
-
-impl<T> CollapseResult<T, ShortBuild<Infallible>> for Result<T, ShortBuf> {
-    fn collapse_result(src: Result<T, ShortBuild<Infallible>>) -> Self {
-        src.map_err(|err| match err {
-            ShortBuild::ShortBuf => ShortBuf,
-            ShortBuild::Build(_) => unreachable!()
-        })
-    }
-}
-//--- Display and Error
-
-impl fmt::Display for ShortBuf {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.write_str("buffer size exceeded")
-    }
-}
-
-#[cfg(feature = "std")]
-impl std::error::Error for ShortBuf {}
-
-
-//------------ ShortBuild ----------------------------------------------------
-
-pub enum ShortBuild<T> {
-    Build(T),
-    ShortBuf,
-}
-
-impl<T> From<T> for ShortBuild<T> {
-    fn from(t: T) -> Self {
-        ShortBuild::Build(t)
     }
 }
 

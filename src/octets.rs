@@ -18,6 +18,7 @@ use core::ops::{Index, RangeBounds};
 #[cfg(feature = "bytes")] use bytes::{Bytes, BytesMut};
 #[cfg(feature = "std")] use std::borrow::Cow;
 #[cfg(feature = "std")] use std::vec::Vec;
+#[cfg(feature = "heapless")] use crate::builder::ShortBuf;
 
 
 //------------ Octets --------------------------------------------------------
@@ -95,6 +96,17 @@ impl<A: smallvec::Array<Item = u8>> Octets for smallvec::SmallVec<A> {
     }
 }
 
+#[cfg(feature = "heapless")]
+impl<const N: usize> Octets for heapless::Vec<u8, N> {
+    type Range<'a> = &'a [u8] where Self: 'a;
+
+    fn range(&self, range: impl RangeBounds<usize>) -> Self::Range<'_> {
+        self.index(
+            (range.start_bound().cloned(), range.end_bound().cloned())
+        )
+    }
+}
+
 
 //------------ Truncate ------------------------------------------------------
 
@@ -147,6 +159,13 @@ impl Truncate for BytesMut {
 
 #[cfg(feature = "smallvec")]
 impl<A: smallvec::Array<Item = u8>> Truncate for smallvec::SmallVec<A> {
+    fn truncate(&mut self, len: usize) {
+        self.truncate(len)
+    }
+}
+
+#[cfg(feature = "heapless")]
+impl<const N: usize> Truncate for heapless::Vec<u8, N> {
     fn truncate(&mut self, len: usize) {
         self.truncate(len)
     }
@@ -233,6 +252,18 @@ where
 
     fn try_octets_from(source: Source) -> Result<Self, Self::Infallible> {
         Ok(smallvec::ToSmallVec::to_smallvec(source.as_ref()))
+    }
+}
+
+#[cfg(feature = "heapless")]
+impl<Source, const N: usize> OctetsFrom<Source> for heapless::Vec<u8, N>
+where
+    Source: AsRef<[u8]>,
+{
+    type Error = ShortBuf;
+
+    fn try_octets_from(source: Source) -> Result<Self, ShortBuf> {
+        heapless::Vec::from_slice(source.as_ref()).map_err(|_| ShortBuf)
     }
 }
 

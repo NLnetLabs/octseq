@@ -20,6 +20,7 @@
 //! * truncating the sequence of assembled octets happens through
 //!   [`Truncate`].
 
+use core::fmt;
 use core::convert::Infallible;
 #[cfg(feature = "bytes")] use bytes::{Bytes, BytesMut};
 #[cfg(feature = "std")] use std::borrow::Cow;
@@ -212,6 +213,31 @@ impl<A: smallvec::Array<Item = u8>> OctetsBuilder for smallvec::SmallVec<A> {
     }
 }
 
+#[cfg(feature = "heapless")]
+impl<const N: usize> OctetsBuilder for heapless::Vec<u8, N> {
+    type Octets = Self;
+    type BuildError<E> = ShortBuild<E>;
+    type AppendResult<T> = Result<T, ShortBuf>;
+
+    fn try_append_slice(
+        &mut self, slice: &[u8]
+    ) -> Result<(), Self::BuildError<Infallible>> {
+        self.extend_from_slice(slice).map_err(|_| ShortBuild::ShortBuf)
+    }
+
+    fn len(&self) -> usize {
+        self.as_slice().len()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    fn freeze(self) -> Self::Octets {
+        self
+    }
+}
+
 //------------ EmptyBuilder --------------------------------------------------
 
 /// An octets builder that can be newly created empty.
@@ -259,6 +285,18 @@ impl<A: smallvec::Array<Item = u8>> EmptyBuilder for smallvec::SmallVec<A> {
 
     fn with_capacity(capacity: usize) -> Self {
         smallvec::SmallVec::with_capacity(capacity)
+    }
+}
+
+#[cfg(feature = "heapless")]
+impl<const N: usize> EmptyBuilder for heapless::Vec<u8, N> {
+    fn empty() -> Self {
+        Self::new()
+    }
+
+    fn with_capacity(capacity: usize) -> Self {
+        debug_assert!(capacity <= N);
+        Self::with_capacity(capacity)
     }
 }
 
@@ -321,6 +359,15 @@ impl<A: smallvec::Array<Item = u8>> IntoBuilder for smallvec::SmallVec<A> {
     }
 }
 
+#[cfg(feature = "heapless")]
+impl<const N: usize> IntoBuilder for heapless::Vec<u8, N> {
+    type Builder = Self;
+
+    fn into_builder(self) -> Self::Builder {
+        self
+    }
+}
+
 
 //------------ FromBuilder ---------------------------------------------------
 
@@ -362,6 +409,15 @@ impl FromBuilder for Bytes {
 
 #[cfg(feature = "smallvec")]
 impl<A: smallvec::Array<Item = u8>> FromBuilder for smallvec::SmallVec<A> {
+    type Builder = Self;
+
+    fn from_builder(builder: Self::Builder) -> Self {
+        builder
+    }
+}
+
+#[cfg(feature = "heapless")]
+impl<const N: usize> FromBuilder for heapless::Vec<u8, N> {
     type Builder = Self;
 
     fn from_builder(builder: Self::Builder) -> Self {
@@ -412,4 +468,76 @@ impl<T, E, U: CollapseResult<T, E>> Collapse<U> for Result<T, E> {
         U::collapse_result(self)
     }
 }
+
+
+//------------ ShortBuf ------------------------------------------------------
+
+/// An attempt was made to write beyond the end of a buffer.
+///
+/// This type is returned as an error by all functions and methods that append
+/// data to an [octets builder] when the buffer size of the builder is not
+/// sufficient to append the data.
+///
+/// [octets builder]: trait.OctetsBuilder.html
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ShortBuf;
+
+
+//--- From and CollapseResult
+
+impl From<Infallible> for ShortBuf {
+    fn from(_: Infallible) -> ShortBuf {
+        unreachable!()
+    }
+}
+
+impl<T> CollapseResult<T, ShortBuild<Infallible>> for Result<T, ShortBuf> {
+    fn collapse_result(src: Result<T, ShortBuild<Infallible>>) -> Self {
+        src.map_err(|err| match err {
+            ShortBuild::ShortBuf => ShortBuf,
+            ShortBuild::Build(_) => unreachable!()
+        })
+    }
+}
+
+
+//--- Display and Error
+
+impl fmt::Display for ShortBuf {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str("buffer size exceeded")
+    }
+}
+
+#[cfg(feature = "std")]
+impl std::error::Error for ShortBuf {}
+
+
+//------------ ShortBuild ----------------------------------------------------
+
+#[derive(Clone, Debug)]
+pub enum ShortBuild<T> {
+    Build(T),
+    ShortBuf,
+}
+
+impl<T> From<T> for ShortBuild<T> {
+    fn from(t: T) -> Self {
+        ShortBuild::Build(t)
+    }
+}
+
+//--- Display and Error
+
+impl<T: fmt::Display> fmt::Display for ShortBuild<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ShortBuild::Build(t) => t.fmt(f),
+            ShortBuild::ShortBuf => ShortBuf.fmt(f)
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+impl<T: fmt::Debug + fmt::Display> std::error::Error for ShortBuild<T> {}
 

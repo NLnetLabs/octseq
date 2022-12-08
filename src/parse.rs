@@ -26,9 +26,8 @@ pub struct Parser<'a, Octs: ?Sized> {
 
     /// The length of the octets sequence.
     ///
-    /// This starts out as the length of the underlying sequence and is kept
-    /// here to be able to temporarily limit the allowed length for
-    /// `parse_blocks`.
+    /// This starts out as the length of the underlying sequence but can be
+    /// artificially shortened to limit the length of the parser.
     len: usize,
 }
 
@@ -36,7 +35,7 @@ impl<'a, Octs: ?Sized> Parser<'a, Octs> {
     /// Creates a new parser atop a reference to an octet sequence.
     pub fn from_ref(octets: &'a Octs) -> Self
     where
-        Octs: Octets,
+        Octs: AsRef<[u8]>,
     {
         Parser {
             pos: 0,
@@ -332,6 +331,9 @@ impl<'a, Octs: ?Sized> Clone for Parser<'a, Octs> {
         }
     }
 }
+
+impl<'a, Octs: ?Sized> Copy for Parser<'a, Octs> { }
+
 
 
 //--------- ShortInput -------------------------------------------------------

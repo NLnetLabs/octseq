@@ -13,6 +13,7 @@ license = "BSD-3-Clause"
 
 [dependencies]
 bytes    = { version = "1", optional = true }
+heapless = { version = "0.7", optional = true }
 serde    = { version = "1", optional = true }
 smallvec = { version = "1", optional = true }
 

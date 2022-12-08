@@ -13,14 +13,12 @@ use core::fmt;
 
 //------------ SerializeOctets -----------------------------------------------
 
-#[cfg(feature = "serde")]
 pub trait SerializeOctets {
     fn serialize_octets<S: serde::Serializer>(
         &self, serializer: S
     ) -> Result<S::Ok, S::Error>;
 }
 
-#[cfg(feature = "serde")]
 impl<'a> SerializeOctets for &'a [u8] {
     fn serialize_octets<S: serde::Serializer>(
         &self, serializer: S
@@ -29,7 +27,7 @@ impl<'a> SerializeOctets for &'a [u8] {
     }
 }
 
-#[cfg(all(feature = "std", feature = "serde"))]
+#[cfg(feature = "std")]
 impl<'a> SerializeOctets for std::borrow::Cow<'a, [u8]> {
     fn serialize_octets<S: serde::Serializer>(
         &self, serializer: S
@@ -38,7 +36,7 @@ impl<'a> SerializeOctets for std::borrow::Cow<'a, [u8]> {
     }
 }
 
-#[cfg(all(feature = "std", feature = "serde"))]
+#[cfg(feature = "std")]
 impl SerializeOctets for std::vec::Vec<u8> {
     fn serialize_octets<S: serde::Serializer>(
         &self, serializer: S
@@ -47,7 +45,7 @@ impl SerializeOctets for std::vec::Vec<u8> {
     }
 }
 
-#[cfg(all(feature = "bytes", feature = "serde"))]
+#[cfg(feature = "bytes")]
 impl SerializeOctets for bytes::Bytes {
     fn serialize_octets<S: serde::Serializer>(
         &self, serializer: S
@@ -56,9 +54,18 @@ impl SerializeOctets for bytes::Bytes {
     }
 }
 
-#[cfg(all(feature = "smallvec", feature = "serde"))]
+#[cfg(feature = "smallvec")]
 impl<A> SerializeOctets for smallvec::SmallVec<A>
 where A: smallvec::Array<Item = u8> {
+    fn serialize_octets<S: serde::Serializer>(
+        &self, serializer: S
+    ) -> Result<S::Ok, S::Error> {
+        serializer.serialize_bytes(self.as_ref())
+    }
+}
+
+#[cfg(feature = "heapless")]
+impl<const N: usize> SerializeOctets for heapless::Vec<u8, N> {
     fn serialize_octets<S: serde::Serializer>(
         &self, serializer: S
     ) -> Result<S::Ok, S::Error> {
@@ -69,14 +76,12 @@ where A: smallvec::Array<Item = u8> {
 
 //------------ DeserializeOctets ---------------------------------------------
 
-#[cfg(feature = "serde")]
 pub trait DeserializeOctets<'de>: Sized {
     fn deserialize_octets<D: serde::Deserializer<'de>>(
         deserializer: D
     ) -> Result<Self, D::Error>;
 }
 
-#[cfg(feature = "serde")]
 impl<'de> DeserializeOctets<'de> for &'de [u8] {
     fn deserialize_octets<D: serde::Deserializer<'de>>(
         deserializer: D
@@ -101,7 +106,7 @@ impl<'de> DeserializeOctets<'de> for &'de [u8] {
     }
 }
 
-#[cfg(all(feature = "std", feature = "serde"))]
+#[cfg(feature = "std")]
 impl<'de> DeserializeOctets<'de> for std::borrow::Cow<'de, [u8]> {
     fn deserialize_octets<D: serde::Deserializer<'de>>(
         deserializer: D
@@ -112,7 +117,7 @@ impl<'de> DeserializeOctets<'de> for std::borrow::Cow<'de, [u8]> {
     }
 }
 
-#[cfg(all(feature = "std", feature = "serde"))]
+#[cfg(feature = "std")]
 impl<'de> DeserializeOctets<'de> for std::vec::Vec<u8> {
     fn deserialize_octets<D: serde::Deserializer<'de>>(
         deserializer: D
@@ -137,7 +142,7 @@ impl<'de> DeserializeOctets<'de> for std::vec::Vec<u8> {
     }
 }
 
-#[cfg(all(feature = "bytes", feature = "serde"))]
+#[cfg(feature = "bytes")]
 impl<'de> DeserializeOctets<'de> for bytes::Bytes {
     fn deserialize_octets<D: serde::Deserializer<'de>>(
         deserializer: D
@@ -146,7 +151,7 @@ impl<'de> DeserializeOctets<'de> for bytes::Bytes {
     }
 }
 
-#[cfg(all(feature = "smallvec", feature = "serde"))]
+#[cfg(feature = "smallvec")]
 impl<'de, A> DeserializeOctets<'de> for smallvec::SmallVec<A>
 where A: smallvec::Array<Item = u8> {
     fn deserialize_octets<D: serde::Deserializer<'de>>(
@@ -156,4 +161,52 @@ where A: smallvec::Array<Item = u8> {
     }
 }
 
+#[cfg(feature = "heapless")]
+impl<'de, const N: usize> DeserializeOctets<'de> for heapless::Vec<u8, N> {
+    fn deserialize_octets<D: serde::Deserializer<'de>>(
+        deserializer: D,
+    ) -> Result<Self, D::Error> {
+        HeaplessVecVisitor::new().deserialize(deserializer)
+    }
+}
+
+#[cfg(feature = "heapless")]
+pub struct HeaplessVecVisitor<const N: usize>;
+
+#[cfg(feature = "heapless")]
+impl<const N: usize> HeaplessVecVisitor<N> {
+    fn new() -> Self {
+        Self
+    }
+
+    pub fn deserialize<'de, D: serde::Deserializer<'de>>(
+        self,
+        deserializer: D,
+    ) -> Result<heapless::Vec<u8, N>, D::Error> {
+        deserializer.deserialize_byte_buf(self)
+    }
+}
+
+#[cfg(feature = "heapless")]
+impl<'de, const N: usize> serde::de::Visitor<'de> for HeaplessVecVisitor<N> {
+    type Value = heapless::Vec<u8, N>;
+
+    fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_fmt(format_args!(
+            "an octet sequence of length {} of shorter",
+            N
+        ))
+    }
+
+    fn visit_bytes<E: serde::de::Error>(
+        self,
+        value: &[u8],
+    ) -> Result<Self::Value, E> {
+        if value.len() > N {
+            return Err(E::invalid_length(value.len(), &self));
+        }
+
+        Ok(heapless::Vec::from_iter(value.iter().copied()))
+    }
+}
 

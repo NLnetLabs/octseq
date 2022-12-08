@@ -1,10 +1,10 @@
 
 use core::{cmp, fmt};
 use core::convert::Infallible;
-use crate::traits::{
+use crate::builder::{
     CollapseResult, EmptyBuilder, FromBuilder, IntoBuilder, OctetsBuilder,
-    OctetsFrom, Truncate,
 };
+use crate::octets::{OctetsFrom, Truncate};
 
 
 //------------ SmallOctets ---------------------------------------------------

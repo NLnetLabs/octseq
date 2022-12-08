@@ -5,7 +5,7 @@
 //! ref and allows to parse values from the octets.
 
 use core::fmt;
-use super::traits::Octets;
+use crate::octets::Octets;
 
 //------------ Parser --------------------------------------------------------
 

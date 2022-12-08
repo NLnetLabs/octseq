@@ -80,7 +80,6 @@
 //! fine octets builder.
 
 
-use core::fmt;
 use core::convert::Infallible;
 use core::ops::{Index, RangeBounds};
 #[cfg(feature = "bytes")] use bytes::{Bytes, BytesMut};
@@ -365,12 +364,30 @@ pub trait OctetsBuilder {
     /// [`IntoBuilder`]: trait.IntoBuilder.html
     type Octets: AsRef<[u8]>;
 
-    /// The type of the error that happens when appending data fails.
+    /// An error returned when building fails.
     ///
-    /// For types, such as `Vec<u8>` or `BytesMut` where appending never
-    /// fails (other than with an out-of-memory panic), this should be
-    /// `Infallible` (or `!` when that becomes stable).
-    type AppendError;
+    /// The type argument `E` is a user supplied type covering errors
+    /// outside the provenance of the octets builder itself. If nothing can
+    /// happen outside, use `Infallible` should be used, i.e., in this case
+    /// the error type should be `Self::BuildError<Infallible>`.
+    ///
+    /// If appending octets to the buffer cannot result in any errors, this
+    /// should just be `E`.
+    type BuildError<E>: From<E>;
+
+    /// The result of appending data.
+    ///
+    /// This is the result type for cases where no outside error can happen,
+    /// i.e., where the error type would indeed be
+    /// `Self::BuildError<Infallible>`.
+    ///
+    /// For implementations where appending data can fail, this should be a
+    /// `Result<T, Error>` with `Error` being the error type for appending
+    /// data. Not that this is different from `Self::BuildError<E>` in that
+    /// it is _not_ wrapping some user supplied type `E`.
+    ///
+    /// For unlimited buffers, this should be simply `T`.
+    type AppendResult<T>: CollapseResult<T, Self::BuildError<Infallible>>;
 
     /// Appends the content of a slice to the builder.
     ///
@@ -378,7 +395,17 @@ pub trait OctetsBuilder {
     /// returns an error and leaves the builder alone.
     fn try_append_slice(
         &mut self, slice: &[u8]
-    ) -> Result<(), Self::AppendError>;
+    ) -> Result<(), Self::BuildError<Infallible>>;
+
+    /// Appends the content of a slice to the builder.
+    ///
+    /// If there isn’t enough space available for appending the slice,
+    /// returns an error and leaves the builder alone.
+    fn append_slice(
+        &mut self, slice: &[u8]
+    ) -> Self::AppendResult<()> {
+        self.try_append_slice(slice).collapse()
+    }
 
     /// Converts the builder into immutable octets.
     fn freeze(self) -> Self::Octets
@@ -389,47 +416,17 @@ pub trait OctetsBuilder {
 
     /// Returns whether the builder is currently empty.
     fn is_empty(&self) -> bool;
-
-    fn append_slice(&mut self, slice: &[u8])
-    where Self::AppendError: Into<Infallible> {
-        // XXX Use .into_ok() once that is stable.
-        let _ = self.try_append_slice(slice);
-    }
-
-    /// Appends all data or nothing.
-    ///
-    /// The method executes the provided closure that presumably will try to
-    /// append data to the builder and propagates an error from the builder.
-    /// If the closure returns with an error, the builder is truncated back
-    /// to the length from before the closure was executed.
-    ///
-    /// Note that upon an error the builder is _only_ truncated. If the
-    /// closure modified any already present data via `AsMut<[u8]>`, these
-    /// modification will survive.
-    fn try_append_all<F>(&mut self, op: F) -> Result<(), Self::AppendError>
-    where
-        Self: Truncate,
-        F: FnOnce(&mut Self) -> Result<(), Self::AppendError>,
-    {
-        let pos = self.len();
-        match op(self) {
-            Ok(_) => Ok(()),
-            Err(err) => {
-                self.truncate(pos);
-                Err(err)
-            }
-        }
-    }
 }
 
 #[cfg(feature = "std")]
 impl OctetsBuilder for Vec<u8> {
     type Octets = Self;
-    type AppendError = Infallible;
+    type BuildError<E> = E;
+    type AppendResult<T> = T;
 
     fn try_append_slice(
         &mut self, slice: &[u8]
-    ) -> Result<(), Self::AppendError> {
+    ) -> Result<(), Self::BuildError<Infallible>> {
         self.extend_from_slice(slice);
         Ok(())
     }
@@ -450,11 +447,12 @@ impl OctetsBuilder for Vec<u8> {
 #[cfg(feature = "std")]
 impl<'a> OctetsBuilder for Cow<'a, [u8]> {
     type Octets = Self;
-    type AppendError = Infallible;
+    type BuildError<E> = E;
+    type AppendResult<T> = T;
 
     fn try_append_slice(
         &mut self, slice: &[u8]
-    ) -> Result<(), Self::AppendError> {
+    ) -> Result<(), Self::BuildError<Infallible>> {
         if let Cow::Owned(ref mut vec) = *self {
             vec.extend_from_slice(slice);
         } else {
@@ -483,11 +481,12 @@ impl<'a> OctetsBuilder for Cow<'a, [u8]> {
 #[cfg(feature = "bytes")]
 impl OctetsBuilder for BytesMut {
     type Octets = Bytes;
-    type AppendError = Infallible;
+    type BuildError<E> = E;
+    type AppendResult<T> = T;
 
     fn try_append_slice(
         &mut self, slice: &[u8]
-    ) -> Result<(), Self::AppendError> {
+    ) -> Result<(), Self::BuildError<Infallible>> {
         self.extend_from_slice(slice);
         Ok(())
     }
@@ -508,11 +507,12 @@ impl OctetsBuilder for BytesMut {
 #[cfg(feature = "smallvec")]
 impl<A: smallvec::Array<Item = u8>> OctetsBuilder for smallvec::SmallVec<A> {
     type Octets = Self;
-    type AppendError = Infallible;
+    type BuildError<E> = E;
+    type AppendResult<T> = T;
 
     fn try_append_slice(
         &mut self, slice: &[u8]
-    ) -> Result<(), Self::AppendError> {
+    ) -> Result<(), Self::BuildError<Infallible>> {
         self.extend_from_slice(slice);
         Ok(())
     }
@@ -688,30 +688,48 @@ impl<A: smallvec::Array<Item = u8>> FromBuilder for smallvec::SmallVec<A> {
 }
 
 
-//============ Error Types ===================================================
+//============ Error Handling ================================================
 
-//------------ ShortBuf ------------------------------------------------------
-
-/// An attempt was made to write beyond the end of a buffer.
+/// A helper trait to allow removing the error case of infallible results.
 ///
-/// This type is returned as an error by all functions and methods that append
-/// data to an [octets builder] when the buffer size of the builder is not
-/// sufficient to append the data.
-///
-/// [octets builder]: trait.OctetsBuilder.html
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ShortBuf;
+/// This could technically also be achieved using `From`, however, the
+/// blanket impl below will not be possible for that. So we just have to
+/// cobble together a helper trait.
+pub trait CollapseResult<T, E> {
+    fn collapse_result(src: Result<T, E>) -> Self;
+}
 
-//--- Display and Error
-
-impl fmt::Display for ShortBuf {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.write_str("buffer size exceeded")
+// This blanket impl will cover the cases for unlimited buffers, i.e., it
+// will allow turning a `Result<T, Infallible>` into just a `T`.
+//
+// Octets builders that can error will have to impl the trait for their own
+// error type.
+impl<T> CollapseResult<T, Infallible> for T {
+    fn collapse_result(src: Result<T, Infallible>) -> Self {
+        match src {
+            Ok(t) => t,
+            Err(_) => unreachable!()
+        }
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for ShortBuf {}
+/// Another helper trait that acts as the reverse of `CollapseResult`.
+///
+/// This trait acts for `CollapseResult` as `Into` acts for `From`. It only
+/// exists to make it possible to write out the trait bounds of
+/// `OctetsBuilder::AppendResult<T>` while at the same time allow users to
+/// call a method on whatever `OctetsBuilder::try_append_slice` returns to
+/// collapse that result. Thus, it is only implemented via the below blanket
+/// impl.
+pub trait Collapse<U> {
+    fn collapse(self) -> U;
+}
+
+impl<T, E, U: CollapseResult<T, E>> Collapse<U> for Result<T, E> {
+    fn collapse(self) -> U {
+        U::collapse_result(self)
+    }
+}
 
 
 //============ Testing =======================================================

@@ -7,13 +7,6 @@ use crate::builder::{
 use crate::octets::{OctetsFrom, Truncate};
 
 
-//------------ SmallOctets ---------------------------------------------------
-
-/// A octets vector that doesn’t allocate for small sizes.
-#[cfg(feature = "smallvec")]
-pub type SmallOctets = smallvec::SmallVec<[u8; 24]>;
-
-
 //------------ Array ---------------------------------------------------------
 
 #[derive(Clone)]

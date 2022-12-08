@@ -135,14 +135,6 @@ impl<const N: usize> OctetsBuilder for Array<N> {
         Ok(())
     }
 
-    fn len(&self) -> usize {
-        self.len
-    }
-
-    fn is_empty(&self) -> bool {
-        self.len == 0
-    }
-
     fn freeze(self) -> Self::Octets {
         self
     }

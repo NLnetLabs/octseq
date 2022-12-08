@@ -93,12 +93,6 @@ pub trait OctetsBuilder {
     /// Converts the builder into immutable octets.
     fn freeze(self) -> Self::Octets
     where Self: Sized;
-
-    /// Returns the length of the already assembled data.
-    fn len(&self) -> usize;
-
-    /// Returns whether the builder is currently empty.
-    fn is_empty(&self) -> bool;
 }
 
 #[cfg(feature = "std")]
@@ -112,14 +106,6 @@ impl OctetsBuilder for Vec<u8> {
     ) -> Result<(), Self::BuildError<Infallible>> {
         self.extend_from_slice(slice);
         Ok(())
-    }
-
-    fn len(&self) -> usize {
-        self.len()
-    }
-
-    fn is_empty(&self) -> bool {
-        self.is_empty()
     }
 
     fn freeze(self) -> Self::Octets {
@@ -148,14 +134,6 @@ impl<'a> OctetsBuilder for Cow<'a, [u8]> {
         Ok(())
     }
 
-    fn len(&self) -> usize {
-        self.as_ref().len()
-    }
-
-    fn is_empty(&self) -> bool {
-        self.as_ref().is_empty()
-    }
-
     fn freeze(self) -> Self::Octets {
         self
     }
@@ -172,14 +150,6 @@ impl OctetsBuilder for BytesMut {
     ) -> Result<(), Self::BuildError<Infallible>> {
         self.extend_from_slice(slice);
         Ok(())
-    }
-
-    fn len(&self) -> usize {
-        self.len()
-    }
-
-    fn is_empty(&self) -> bool {
-        self.is_empty()
     }
 
     fn freeze(self) -> Self::Octets {
@@ -200,14 +170,6 @@ impl<A: smallvec::Array<Item = u8>> OctetsBuilder for smallvec::SmallVec<A> {
         Ok(())
     }
 
-    fn len(&self) -> usize {
-        self.len()
-    }
-
-    fn is_empty(&self) -> bool {
-        self.is_empty()
-    }
-
     fn freeze(self) -> Self::Octets {
         self
     }
@@ -223,14 +185,6 @@ impl<const N: usize> OctetsBuilder for heapless::Vec<u8, N> {
         &mut self, slice: &[u8]
     ) -> Result<(), Self::BuildError<Infallible>> {
         self.extend_from_slice(slice).map_err(|_| ShortBuild::ShortBuf)
-    }
-
-    fn len(&self) -> usize {
-        self.as_slice().len()
-    }
-
-    fn is_empty(&self) -> bool {
-        self.len() == 0
     }
 
     fn freeze(self) -> Self::Octets {

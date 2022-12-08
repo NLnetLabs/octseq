@@ -22,8 +22,9 @@
 #[macro_use]
 extern crate std;
 
-pub use self::traits::*;
 pub use self::parse::*;
+pub use self::traits::*;
+pub use self::types::*;
 
 pub mod traits;
 pub mod parse;

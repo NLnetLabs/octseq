@@ -7,7 +7,8 @@
 
 use core::{borrow, cmp, fmt, hash, ops, str};
 use core::convert::Infallible;
-use crate::traits::{Collapse, EmptyBuilder, OctetsBuilder, Truncate};
+use crate::builder::{Collapse, EmptyBuilder, OctetsBuilder};
+use crate::octets::Truncate;
 
 
 //------------ Str -----------------------------------------------------------

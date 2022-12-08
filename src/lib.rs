@@ -22,13 +22,14 @@
 #[macro_use]
 extern crate std;
 
+pub use self::array::*;
+pub use self::builder::*;
+pub use self::octets::*;
 pub use self::parse::*;
-pub use self::traits::*;
-pub use self::types::*;
 
-pub mod traits;
+pub mod array;
+pub mod builder;
+pub mod octets;
 pub mod parse;
 pub mod serde;
 pub mod str;
-pub mod types;
-

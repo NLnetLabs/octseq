@@ -18,6 +18,8 @@ Breaking Changes
   * broke up `traits` into `octets` and `builder`,
   * renamed `types` to `array`, and
   * moved `SmallOctets` to `octets`. ([#18])
+* The optional traits `SerializeOctets` and `DeserializeOctets` have been
+  redesigned for greater flexibility. ([#21])
 
 New
 
@@ -37,6 +39,7 @@ Other Changes
 [#17]: https://github.com/NLnetLabs/octseq/pull/17
 [#18]: https://github.com/NLnetLabs/octseq/pull/18
 [#19]: https://github.com/NLnetLabs/octseq/pull/19
+[#21]: https://github.com/NLnetLabs/octseq/pull/21
 
 
 ## 0.1.0

@@ -240,26 +240,58 @@ impl<const N: usize> crate::serde::SerializeOctets for Array<N> {
 
 #[cfg(feature = "serde")]
 impl<'de, const N: usize> crate::serde::DeserializeOctets<'de> for Array<N> {
+    type Visitor = ArrayVisitor<N>;
+
     fn deserialize_octets<D: serde::Deserializer<'de>>(
         deserializer: D
     ) -> Result<Self, D::Error> {
-        struct Visitor<const N: usize>;
+        Self::visitor().deserialize(deserializer)
+    }
 
-        impl<'de, const N: usize> serde::de::Visitor<'de> for Visitor<N> {
-            type Value = Array<N>;
+    fn deserialize_with_visitor<D, V>(
+        deserializer: D,
+        visitor: V,
+    ) -> Result<V::Value, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+        V: serde::de::Visitor<'de>,
+    {
+        deserializer.deserialize_byte_buf(visitor)
+    }
 
-            fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
-                f.write_str("an octet sequence")
-            }
+    fn visitor() -> Self::Visitor {
+        ArrayVisitor
+    }
+}
 
-            fn visit_bytes<E: serde::de::Error>(
-                self, value: &[u8]
-            ) -> Result<Self::Value, E> {
-                Array::try_from(value).map_err(E::custom)
-            }
-        }
 
-        deserializer.deserialize_bytes(Visitor)
+//------------ ArrayVisitor ----------------------------------------------
+
+#[cfg(feature = "serde")]
+pub struct ArrayVisitor<const N: usize>;
+
+#[cfg(feature = "heapless")]
+impl<const N: usize> ArrayVisitor<N> {
+    pub fn deserialize<'de, D: serde::Deserializer<'de>>(
+        self,
+        deserializer: D,
+    ) -> Result<Array<N>, D::Error> {
+        deserializer.deserialize_byte_buf(self)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de, const N: usize> serde::de::Visitor<'de> for ArrayVisitor<N> {
+    type Value = Array<N>;
+
+    fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str("an octet sequence")
+    }
+
+    fn visit_bytes<E: serde::de::Error>(
+        self, value: &[u8]
+    ) -> Result<Self::Value, E> {
+        Array::try_from(value).map_err(E::custom)
     }
 }
 

@@ -9,6 +9,8 @@
 #![cfg(feature = "serde")]
 
 use core::fmt;
+use core::marker::PhantomData;
+use serde::de::Visitor;
 
 
 //------------ SerializeOctets -----------------------------------------------
@@ -17,6 +19,10 @@ pub trait SerializeOctets {
     fn serialize_octets<S: serde::Serializer>(
         &self, serializer: S
     ) -> Result<S::Ok, S::Error>;
+
+    fn as_serialized_octets(&self) -> AsSerializedOctets<Self> {
+        AsSerializedOctets(self)
+    }
 }
 
 impl<'a> SerializeOctets for &'a [u8] {
@@ -74,101 +80,289 @@ impl<const N: usize> SerializeOctets for heapless::Vec<u8, N> {
 }
 
 
+//------------ AsSerializedOctets --------------------------------------------
+
+/// A wrapper forcing a value to serialize through its octets.
+///
+/// This type can be used where a `Serialize` value is required.
+pub struct AsSerializedOctets<'a, T: ?Sized>(&'a T);
+
+impl<'a, T: SerializeOctets> serde::Serialize for AsSerializedOctets<'a, T> {
+    fn serialize<S: serde::Serializer>(
+        &self,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error> {
+        self.0.serialize_octets(serializer)
+    }
+}
+
+
 //------------ DeserializeOctets ---------------------------------------------
 
 pub trait DeserializeOctets<'de>: Sized {
+    type Visitor: Visitor<'de, Value = Self>;
+
     fn deserialize_octets<D: serde::Deserializer<'de>>(
         deserializer: D
     ) -> Result<Self, D::Error>;
+
+    fn deserialize_with_visitor<
+        D: serde::Deserializer<'de>,
+        V: serde::de::Visitor<'de>,
+    >(
+        deserializer: D,
+        visitor: V,
+    ) -> Result<V::Value, D::Error>;
+
+    fn visitor() -> Self::Visitor;
 }
 
 impl<'de> DeserializeOctets<'de> for &'de [u8] {
+    type Visitor = BorrowedVisitor<Self>;
+
     fn deserialize_octets<D: serde::Deserializer<'de>>(
-        deserializer: D
+        deserializer: D,
     ) -> Result<Self, D::Error> {
-        struct Visitor;
+        Self::visitor().deserialize(deserializer)
+    }
 
-        impl<'de> serde::de::Visitor<'de> for Visitor {
-            type Value = &'de [u8];
+    fn deserialize_with_visitor<D, V>(
+        deserializer: D,
+        visitor: V,
+    ) -> Result<V::Value, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+        V: serde::de::Visitor<'de>,
+    {
+        deserializer.deserialize_bytes(visitor)
+    }
 
-            fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
-                f.write_str("an octet sequence")
-            }
-
-            fn visit_borrowed_bytes<E: serde::de::Error>(
-                self, value: &'de [u8]
-            ) -> Result<Self::Value, E> {
-                Ok(value)
-            }
-        }
-
-        deserializer.deserialize_bytes(Visitor)
+    fn visitor() -> Self::Visitor {
+        BorrowedVisitor::new()
     }
 }
 
 #[cfg(feature = "std")]
 impl<'de> DeserializeOctets<'de> for std::borrow::Cow<'de, [u8]> {
+    type Visitor = BorrowedVisitor<Self>;
+
     fn deserialize_octets<D: serde::Deserializer<'de>>(
-        deserializer: D
+        deserializer: D,
     ) -> Result<Self, D::Error> {
-        Ok(std::borrow::Cow::Borrowed(
-            DeserializeOctets::deserialize_octets(deserializer)?
-        ))
+        Self::visitor().deserialize(deserializer)
+    }
+
+    fn deserialize_with_visitor<D, V>(
+        deserializer: D,
+        visitor: V,
+    ) -> Result<V::Value, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+        V: serde::de::Visitor<'de>,
+    {
+        deserializer.deserialize_bytes(visitor)
+    }
+
+    fn visitor() -> Self::Visitor {
+        BorrowedVisitor::new()
     }
 }
 
 #[cfg(feature = "std")]
 impl<'de> DeserializeOctets<'de> for std::vec::Vec<u8> {
+    type Visitor = BufVisitor<Self>;
+
     fn deserialize_octets<D: serde::Deserializer<'de>>(
-        deserializer: D
+        deserializer: D,
     ) -> Result<Self, D::Error> {
-        struct Visitor;
+        Self::visitor().deserialize(deserializer)
+    }
 
-        impl<'de> serde::de::Visitor<'de> for Visitor {
-            type Value = std::vec::Vec<u8>;
+    fn deserialize_with_visitor<D, V>(
+        deserializer: D,
+        visitor: V,
+    ) -> Result<V::Value, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+        V: serde::de::Visitor<'de>,
+    {
+        deserializer.deserialize_byte_buf(visitor)
+    }
 
-            fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
-                f.write_str("an octet sequence")
-            }
-
-            fn visit_byte_buf<E: serde::de::Error>(
-                self, value: std::vec::Vec<u8>
-            ) -> Result<Self::Value, E> {
-                Ok(value)
-            }
-        }
-
-        deserializer.deserialize_byte_buf(Visitor)
+    fn visitor() -> Self::Visitor {
+        BufVisitor::new()
     }
 }
 
 #[cfg(feature = "bytes")]
 impl<'de> DeserializeOctets<'de> for bytes::Bytes {
+    type Visitor = BufVisitor<Self>;
+
     fn deserialize_octets<D: serde::Deserializer<'de>>(
-        deserializer: D
+        deserializer: D,
     ) -> Result<Self, D::Error> {
-        std::vec::Vec::deserialize_octets(deserializer).map(Into::into)
+        Self::visitor().deserialize(deserializer)
+    }
+
+    fn deserialize_with_visitor<D, V>(
+        deserializer: D,
+        visitor: V,
+    ) -> Result<V::Value, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+        V: serde::de::Visitor<'de>,
+    {
+        deserializer.deserialize_byte_buf(visitor)
+    }
+
+    fn visitor() -> Self::Visitor {
+        BufVisitor::new()
     }
 }
 
 #[cfg(feature = "smallvec")]
 impl<'de, A> DeserializeOctets<'de> for smallvec::SmallVec<A>
-where A: smallvec::Array<Item = u8> {
+where
+    A: smallvec::Array<Item = u8>,
+{
+    type Visitor = BufVisitor<Self>;
+
     fn deserialize_octets<D: serde::Deserializer<'de>>(
-        deserializer: D
+        deserializer: D,
     ) -> Result<Self, D::Error> {
-        std::vec::Vec::deserialize_octets(deserializer).map(Into::into)
+        Self::visitor().deserialize(deserializer)
+    }
+
+    fn deserialize_with_visitor<D, V>(
+        deserializer: D,
+        visitor: V,
+    ) -> Result<V::Value, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+        V: serde::de::Visitor<'de>,
+    {
+        deserializer.deserialize_byte_buf(visitor)
+    }
+
+    fn visitor() -> Self::Visitor {
+        BufVisitor::new()
     }
 }
 
 #[cfg(feature = "heapless")]
 impl<'de, const N: usize> DeserializeOctets<'de> for heapless::Vec<u8, N> {
+    type Visitor = HeaplessVecVisitor<N>;
+
     fn deserialize_octets<D: serde::Deserializer<'de>>(
         deserializer: D,
     ) -> Result<Self, D::Error> {
-        HeaplessVecVisitor::new().deserialize(deserializer)
+        Self::visitor().deserialize(deserializer)
+    }
+
+    fn deserialize_with_visitor<D, V>(
+        deserializer: D,
+        visitor: V,
+    ) -> Result<V::Value, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+        V: serde::de::Visitor<'de>,
+    {
+        deserializer.deserialize_byte_buf(visitor)
+    }
+
+    fn visitor() -> Self::Visitor {
+        HeaplessVecVisitor::new()
     }
 }
+
+//------------ BorrowedVisitor -------------------------------------------
+
+pub struct BorrowedVisitor<T>(PhantomData<T>);
+
+impl<T> BorrowedVisitor<T> {
+    fn new() -> Self {
+        BorrowedVisitor(PhantomData)
+    }
+
+    pub fn deserialize<'de, D: serde::Deserializer<'de>>(
+        self,
+        deserializer: D,
+    ) -> Result<T, D::Error>
+    where
+        T: From<&'de [u8]>,
+    {
+        deserializer.deserialize_bytes(self)
+    }
+}
+
+impl<'de, T> serde::de::Visitor<'de> for BorrowedVisitor<T>
+where
+    T: From<&'de [u8]>,
+{
+    type Value = T;
+
+    fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str("an octet sequence")
+    }
+
+    fn visit_borrowed_bytes<E: serde::de::Error>(
+        self,
+        value: &'de [u8],
+    ) -> Result<Self::Value, E> {
+        Ok(value.into())
+    }
+}
+
+//------------ BufVisitor ------------------------------------------------
+
+#[cfg(feature = "std")]
+pub struct BufVisitor<T>(PhantomData<T>);
+
+#[cfg(feature = "std")]
+impl<T> BufVisitor<T> {
+    fn new() -> Self {
+        BufVisitor(PhantomData)
+    }
+
+    pub fn deserialize<'de, D: serde::Deserializer<'de>>(
+        self,
+        deserializer: D,
+    ) -> Result<T, D::Error>
+    where
+        T: From<std::vec::Vec<u8>>,
+    {
+        deserializer.deserialize_byte_buf(self)
+    }
+}
+
+#[cfg(feature = "std")]
+impl<'de, T> serde::de::Visitor<'de> for BufVisitor<T>
+where
+    T: From<std::vec::Vec<u8>>,
+{
+    type Value = T;
+
+    fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str("an octet sequence")
+    }
+
+    fn visit_borrowed_bytes<E: serde::de::Error>(
+        self,
+        value: &'de [u8],
+    ) -> Result<Self::Value, E> {
+        Ok(std::vec::Vec::from(value).into())
+    }
+
+    fn visit_byte_buf<E: serde::de::Error>(
+        self,
+        value: std::vec::Vec<u8>,
+    ) -> Result<Self::Value, E> {
+        Ok(value.into())
+    }
+}
+
+
+//------------ HeaplessVisitor -----------------------------------------------
 
 #[cfg(feature = "heapless")]
 pub struct HeaplessVecVisitor<const N: usize>;

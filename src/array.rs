@@ -3,9 +3,9 @@ use core::{cmp, fmt};
 use core::convert::Infallible;
 use crate::builder::{
     EmptyBuilder, FromBuilder, IntoBuilder, OctetsBuilder, ShortBuf,
-    ShortBuild,
+    ShortBuild, Truncate,
 };
-use crate::octets::{OctetsFrom, Truncate};
+use crate::octets::OctetsFrom;
 
 
 //------------ Array ---------------------------------------------------------

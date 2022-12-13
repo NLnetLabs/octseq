@@ -192,6 +192,71 @@ impl<const N: usize> OctetsBuilder for heapless::Vec<u8, N> {
     }
 }
 
+
+//------------ Truncate ------------------------------------------------------
+
+/// An octet sequence that can be shortened.
+pub trait Truncate {
+    /// Truncate the sequence to `len` octets.
+    ///
+    /// If `len` is larger than the length of the sequence, nothing happens.
+    fn truncate(&mut self, len: usize);
+}
+
+impl<'a> Truncate for &'a [u8] {
+    fn truncate(&mut self, len: usize) {
+        if len < self.len() {
+            *self = &self[..len]
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+impl<'a> Truncate for Cow<'a, [u8]> {
+    fn truncate(&mut self, len: usize) {
+        match *self {
+            Cow::Borrowed(ref mut slice) => *slice = &slice[..len],
+            Cow::Owned(ref mut vec) => vec.truncate(len),
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+impl Truncate for Vec<u8> {
+    fn truncate(&mut self, len: usize) {
+        self.truncate(len)
+    }
+}
+
+#[cfg(feature = "bytes")]
+impl Truncate for Bytes {
+    fn truncate(&mut self, len: usize) {
+        self.truncate(len)
+    }
+}
+
+#[cfg(feature = "bytes")]
+impl Truncate for BytesMut {
+    fn truncate(&mut self, len: usize) {
+        self.truncate(len)
+    }
+}
+
+#[cfg(feature = "smallvec")]
+impl<A: smallvec::Array<Item = u8>> Truncate for smallvec::SmallVec<A> {
+    fn truncate(&mut self, len: usize) {
+        self.truncate(len)
+    }
+}
+
+#[cfg(feature = "heapless")]
+impl<const N: usize> Truncate for heapless::Vec<u8, N> {
+    fn truncate(&mut self, len: usize) {
+        self.truncate(len)
+    }
+}
+
+
 //------------ EmptyBuilder --------------------------------------------------
 
 /// An octets builder that can be newly created empty.

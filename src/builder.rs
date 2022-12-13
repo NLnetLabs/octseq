@@ -56,7 +56,7 @@ pub trait OctetsBuilder {
     ///
     /// If appending octets to the buffer cannot result in any errors, this
     /// should just be `E`.
-    type BuildError<E>: From<E>;
+    type BuildError<E>: From<E> + Into<ShortBuild<E>>;
 
     /// The result of appending data.
     ///

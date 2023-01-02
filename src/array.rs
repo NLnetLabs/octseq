@@ -1,9 +1,8 @@
 
 use core::{cmp, fmt};
-use core::convert::Infallible;
 use crate::builder::{
     EmptyBuilder, FromBuilder, IntoBuilder, OctetsBuilder, ShortBuf,
-    ShortBuild, Truncate,
+    Truncate,
 };
 use crate::octets::OctetsFrom;
 
@@ -120,15 +119,14 @@ impl<const N: usize> Truncate for Array<N> {
 
 impl<const N: usize> OctetsBuilder for Array<N> {
     type Octets = Self;
-    type BuildError<E> = ShortBuild<E>;
-    type AppendResult<T> = Result<T, ShortBuf>;
+    type AppendError = ShortBuf;
 
-    fn try_append_slice(
+    fn append_slice(
         &mut self, slice: &[u8]
-    ) -> Result<(), Self::BuildError<Infallible>> {
+    ) -> Result<(), Self::AppendError> {
         let end = self.len + slice.len();
         if end > N {
-            return Err(ShortBuild::ShortBuf)
+            return Err(ShortBuf)
         }
         self.octets[self.len..end].copy_from_slice(slice);
         self.len = end;

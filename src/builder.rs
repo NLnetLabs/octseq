@@ -258,9 +258,12 @@ impl<const N: usize> EmptyBuilder for heapless::Vec<u8, N> {
 
 //------------ FreezeBuilder -------------------------------------------------
 
+/// An octets builder that can be frozen into a imutable octets sequence.
 pub trait FreezeBuilder {
+    /// The type of octets sequence to builder will be frozen into.
     type Octets;
 
+    /// Converts the octets builder into an imutable octets sequence.
     fn freeze(self) -> Self::Octets;
 }
 

@@ -1,8 +1,9 @@
 # _octseq_ - Generic Octets Sequences
 
-Such sequences require a varying amount of memory and different use cases
-suggest different strategies to manage that memory: references to `u8`
-slices, `Vec<u8>`, `Arc<[u8]>` are examples provided by the standard library.
+Octets sequences, i.e., variable length sequences of bytes, require a
+varying amount of memory and different use cases suggest different
+strategies to manage that memory: references to `u8` slices, `Vec<u8>`,
+`Arc<[u8]>` are examples provided by the standard library.
 
 In many cases, underlying memory management strategies don’t matter for
 composite types storing such octets sequences or for code manipulating

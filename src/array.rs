@@ -1,8 +1,8 @@
 
 use core::{cmp, fmt};
 use crate::builder::{
-    EmptyBuilder, FromBuilder, IntoBuilder, OctetsBuilder, ShortBuf,
-    Truncate,
+    EmptyBuilder, FreezeBuilder, FromBuilder, IntoBuilder, OctetsBuilder,
+    ShortBuf, Truncate,
 };
 use crate::octets::OctetsFrom;
 
@@ -115,10 +115,9 @@ impl<const N: usize> Truncate for Array<N> {
 }
 
 
-//--- OctetsBuilder and EmptyBuilder
+//--- OctetsBuilder, EmptyBuilder, and FreezeBuilder
 
 impl<const N: usize> OctetsBuilder for Array<N> {
-    type Octets = Self;
     type AppendError = ShortBuf;
 
     fn append_slice(
@@ -132,10 +131,6 @@ impl<const N: usize> OctetsBuilder for Array<N> {
         self.len = end;
         Ok(())
     }
-
-    fn freeze(self) -> Self::Octets {
-        self
-    }
 }
 
 impl<const N: usize> EmptyBuilder for Array<N> {
@@ -145,6 +140,14 @@ impl<const N: usize> EmptyBuilder for Array<N> {
 
     fn with_capacity(_capacity: usize) -> Self {
         Self::empty()
+    }
+}
+
+impl<const N: usize> FreezeBuilder for Array<N> {
+    type Octets = Self;
+
+    fn freeze(self) -> Self::Octets {
+        self
     }
 }
 

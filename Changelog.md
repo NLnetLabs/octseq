@@ -8,10 +8,8 @@ Breaking Changes
   over its purpose. This requires Rust 1.65.0. ([#12])
 * Change the signature of `Octets::range` to use a range and drop all the
   convenience methods. ([#13])
-* Change error handling of `OctetsBuilder`: Replace the `AppendError`
-  associated type with a pair of `BuildError<E>` and `AppendResult<T>`
-  types that can be collapsed into simpler types with the new
-  `CollapseResult` and `Collapse` traits. ([#17])
+* Split conversion from an octets builder to an immutable octets sequence
+  off of `OctetsBuilder` to the new `FreezeBuilder` trait. ([#25])
 * Dropped the `len` and `is_empty` methods from the `OctetsBuilder` trait.
   These can be requested via `AsRef<[u8]>` if necessary. ([#20])
 * Rearranged module structure:
@@ -36,10 +34,10 @@ Other Changes
 [#11]: https://github.com/NLnetLabs/octseq/pull/11
 [#12]: https://github.com/NLnetLabs/octseq/pull/12
 [#13]: https://github.com/NLnetLabs/octseq/pull/13
-[#17]: https://github.com/NLnetLabs/octseq/pull/17
 [#18]: https://github.com/NLnetLabs/octseq/pull/18
 [#19]: https://github.com/NLnetLabs/octseq/pull/19
 [#21]: https://github.com/NLnetLabs/octseq/pull/21
+[#25]: https://github.com/NLnetLabs/octseq/pull/25
 
 
 ## 0.1.0

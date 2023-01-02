@@ -47,38 +47,18 @@ pub trait OctetsBuilder {
     /// [`IntoBuilder`]: trait.IntoBuilder.html
     type Octets: AsRef<[u8]>;
 
-    /// An error returned when building fails.
+    /// The error type when appending data fails.
     ///
-    /// The type argument `E` is a user supplied type covering errors
-    /// outside the provenance of the octets builder itself. If nothing can
-    /// happen outside, use `Infallible` should be used, i.e., in this case
-    /// the error type should be `Self::BuildError<Infallible>`.
+    /// There are exactly two options for this type: Builders where appending
+    /// never fails use `Infallible`. Builders with a limited buffer which 
+    /// may have insufficient space for appending use [`ShortBuf`].
     ///
-    /// If appending octets to the buffer cannot result in any errors, this
-    /// should just be `E`.
-    type BuildError<E>: From<E> + Into<ShortBuild<E>>;
-
-    /// The result of appending data.
-    ///
-    /// This is the result type for cases where no outside error can happen,
-    /// i.e., where the error type would indeed be
-    /// `Self::BuildError<Infallible>`.
-    ///
-    /// For implementations where appending data can fail, this should be a
-    /// `Result<T, Error>` with `Error` being the error type for appending
-    /// data. Not that this is different from `Self::BuildError<E>` in that
-    /// it is _not_ wrapping some user supplied type `E`.
-    ///
-    /// For unlimited buffers, this should be simply `T`.
-    type AppendResult<T>: CollapseResult<T, Self::BuildError<Infallible>>;
-
-    /// Appends the content of a slice to the builder.
-    ///
-    /// If there isn’t enough space available for appending the slice,
-    /// returns an error and leaves the builder alone.
-    fn try_append_slice(
-        &mut self, slice: &[u8]
-    ) -> Result<(), Self::BuildError<Infallible>>;
+    /// The trait bound on the type allows upgrading the error to [`ShortBuf`]
+    /// even for builders with unlimited space. This way, an error type for
+    /// operations that use a builder doesn’t need to be generic over the
+    /// append error type and can simply use a variant for anything
+    /// `Into<ShortBuf>` instead.
+    type AppendError: Into<ShortBuf>;
 
     /// Appends the content of a slice to the builder.
     ///
@@ -86,9 +66,7 @@ pub trait OctetsBuilder {
     /// returns an error and leaves the builder alone.
     fn append_slice(
         &mut self, slice: &[u8]
-    ) -> Self::AppendResult<()> {
-        self.try_append_slice(slice).collapse()
-    }
+    ) -> Result<(), Self::AppendError>;
 
     /// Converts the builder into immutable octets.
     fn freeze(self) -> Self::Octets
@@ -98,12 +76,11 @@ pub trait OctetsBuilder {
 #[cfg(feature = "std")]
 impl OctetsBuilder for Vec<u8> {
     type Octets = Self;
-    type BuildError<E> = E;
-    type AppendResult<T> = T;
+    type AppendError = Infallible;
 
-    fn try_append_slice(
+    fn append_slice(
         &mut self, slice: &[u8]
-    ) -> Result<(), Self::BuildError<Infallible>> {
+    ) -> Result<(), Self::AppendError> {
         self.extend_from_slice(slice);
         Ok(())
     }
@@ -116,12 +93,11 @@ impl OctetsBuilder for Vec<u8> {
 #[cfg(feature = "std")]
 impl<'a> OctetsBuilder for Cow<'a, [u8]> {
     type Octets = Self;
-    type BuildError<E> = E;
-    type AppendResult<T> = T;
+    type AppendError = Infallible;
 
-    fn try_append_slice(
+    fn append_slice(
         &mut self, slice: &[u8]
-    ) -> Result<(), Self::BuildError<Infallible>> {
+    ) -> Result<(), Self::AppendError> {
         if let Cow::Owned(ref mut vec) = *self {
             vec.extend_from_slice(slice);
         } else {
@@ -142,12 +118,11 @@ impl<'a> OctetsBuilder for Cow<'a, [u8]> {
 #[cfg(feature = "bytes")]
 impl OctetsBuilder for BytesMut {
     type Octets = Bytes;
-    type BuildError<E> = E;
-    type AppendResult<T> = T;
+    type AppendError = Infallible;
 
-    fn try_append_slice(
+    fn append_slice(
         &mut self, slice: &[u8]
-    ) -> Result<(), Self::BuildError<Infallible>> {
+    ) -> Result<(), Self::AppendError> {
         self.extend_from_slice(slice);
         Ok(())
     }
@@ -160,12 +135,11 @@ impl OctetsBuilder for BytesMut {
 #[cfg(feature = "smallvec")]
 impl<A: smallvec::Array<Item = u8>> OctetsBuilder for smallvec::SmallVec<A> {
     type Octets = Self;
-    type BuildError<E> = E;
-    type AppendResult<T> = T;
+    type AppendError = Infallible;
 
-    fn try_append_slice(
+    fn append_slice(
         &mut self, slice: &[u8]
-    ) -> Result<(), Self::BuildError<Infallible>> {
+    ) -> Result<(), Self::AppendError> {
         self.extend_from_slice(slice);
         Ok(())
     }
@@ -178,13 +152,12 @@ impl<A: smallvec::Array<Item = u8>> OctetsBuilder for smallvec::SmallVec<A> {
 #[cfg(feature = "heapless")]
 impl<const N: usize> OctetsBuilder for heapless::Vec<u8, N> {
     type Octets = Self;
-    type BuildError<E> = ShortBuild<E>;
-    type AppendResult<T> = Result<T, ShortBuf>;
+    type AppendError = ShortBuf;
 
-    fn try_append_slice(
+    fn append_slice(
         &mut self, slice: &[u8]
-    ) -> Result<(), Self::BuildError<Infallible>> {
-        self.extend_from_slice(slice).map_err(|_| ShortBuild::ShortBuf)
+    ) -> Result<(), Self::AppendError> {
+        self.extend_from_slice(slice).map_err(|_| ShortBuf)
     }
 
     fn freeze(self) -> Self::Octets {
@@ -447,48 +420,6 @@ impl<const N: usize> FromBuilder for heapless::Vec<u8, N> {
 
 //============ Error Handling ================================================
 
-/// A helper trait to allow removing the error case of infallible results.
-///
-/// This could technically also be achieved using `From`, however, the
-/// blanket impl below will not be possible for that. So we just have to
-/// cobble together a helper trait.
-pub trait CollapseResult<T, E> {
-    fn collapse_result(src: Result<T, E>) -> Self;
-}
-
-// This blanket impl will cover the cases for unlimited buffers, i.e., it
-// will allow turning a `Result<T, Infallible>` into just a `T`.
-//
-// Octets builders that can error will have to impl the trait for their own
-// error type.
-impl<T> CollapseResult<T, Infallible> for T {
-    fn collapse_result(src: Result<T, Infallible>) -> Self {
-        match src {
-            Ok(t) => t,
-            Err(_) => unreachable!()
-        }
-    }
-}
-
-/// Another helper trait that acts as the reverse of `CollapseResult`.
-///
-/// This trait acts for `CollapseResult` as `Into` acts for `From`. It only
-/// exists to make it possible to write out the trait bounds of
-/// `OctetsBuilder::AppendResult<T>` while at the same time allow users to
-/// call a method on whatever `OctetsBuilder::try_append_slice` returns to
-/// collapse that result. Thus, it is only implemented via the below blanket
-/// impl.
-pub trait Collapse<U> {
-    fn collapse(self) -> U;
-}
-
-impl<T, E, U: CollapseResult<T, E>> Collapse<U> for Result<T, E> {
-    fn collapse(self) -> U {
-        U::collapse_result(self)
-    }
-}
-
-
 //------------ ShortBuf ------------------------------------------------------
 
 /// An attempt was made to write beyond the end of a buffer.
@@ -510,15 +441,6 @@ impl From<Infallible> for ShortBuf {
     }
 }
 
-impl<T> CollapseResult<T, ShortBuild<Infallible>> for Result<T, ShortBuf> {
-    fn collapse_result(src: Result<T, ShortBuild<Infallible>>) -> Self {
-        src.map_err(|err| match err {
-            ShortBuild::ShortBuf => ShortBuf,
-            ShortBuild::Build(_) => unreachable!()
-        })
-    }
-}
-
 
 //--- Display and Error
 
@@ -532,31 +454,33 @@ impl fmt::Display for ShortBuf {
 impl std::error::Error for ShortBuf {}
 
 
-//------------ ShortBuild ----------------------------------------------------
+//------------ Functions for Infallible --------------------------------------
 
-#[derive(Clone, Debug)]
-pub enum ShortBuild<T> {
-    Build(T),
-    ShortBuf,
-}
-
-impl<T> From<T> for ShortBuild<T> {
-    fn from(t: T) -> Self {
-        ShortBuild::Build(t)
+/// Erases an error for infallible results.
+///
+/// This function can be used in place of the still unstable
+/// `Result::into_ok` for operations on infallible octets builders.
+///
+/// If you perform multiple operations, [`with_infallible`] allows you to
+/// use the question mark operator on them before erasing the error.
+pub fn infallible<T, E: Into<Infallible>>(src: Result<T, E>) -> T {
+    match src {
+        Ok(ok) => ok,
+        Err(_) => unreachable!(),
     }
 }
 
-//--- Display and Error
-
-impl<T: fmt::Display> fmt::Display for ShortBuild<T> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            ShortBuild::Build(t) => t.fmt(f),
-            ShortBuild::ShortBuf => ShortBuf.fmt(f)
-        }
-    }
+/// Erases an error for a closure returninb an infallible results.
+///
+/// This function can be used for a sequence of operations on an infallible
+/// octets builder. By wrapping these operations in a closure, you can still
+/// use the question mark operator rather than having to wrap each individual
+/// operation in [`infallible`].
+pub fn with_infallible<F, T, E>(op: F) -> T
+where
+    F: FnOnce() -> Result<T, E>,
+    E: Into<Infallible>,
+{
+    infallible(op())
 }
-
-#[cfg(feature = "std")]
-impl<T: fmt::Debug + fmt::Display> std::error::Error for ShortBuild<T> {}
 

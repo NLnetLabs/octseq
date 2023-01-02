@@ -7,7 +7,7 @@
 
 use core::{borrow, cmp, fmt, hash, ops, str};
 use core::convert::Infallible;
-use crate::builder::{Collapse, EmptyBuilder, OctetsBuilder, Truncate};
+use crate::builder::{EmptyBuilder, OctetsBuilder, Truncate, infallible};
 
 
 //------------ Str -----------------------------------------------------------
@@ -250,7 +250,7 @@ impl<Octets> StrBuilder<Octets> {
     /// a new builder is created and the passed builder is dropped.
     pub fn try_from_utf8_lossy(
         octets: Octets
-    ) -> Result<Self, <Octets as OctetsBuilder>::BuildError<Infallible>>
+    ) -> Result<Self, Octets::AppendError>
     where Octets: AsRef<[u8]> + OctetsBuilder + EmptyBuilder {
         const REPLACEMENT_CHAR: &[u8] = &[239, 191, 189];
 
@@ -262,16 +262,16 @@ impl<Octets> StrBuilder<Octets> {
         let mut res = Octets::with_capacity(octets.len());
         while !octets.is_empty() {
             if err.valid_up_to() > 0 {
-                res.try_append_slice(&octets[..err.valid_up_to()])?;
+                res.append_slice(&octets[..err.valid_up_to()])?;
             }
-            res.try_append_slice(REPLACEMENT_CHAR)?;
+            res.append_slice(REPLACEMENT_CHAR)?;
             octets = match err.error_len() {
                 Some(len) => &octets[err.valid_up_to() + len ..],
                 None => b""
             };
             err = match str::from_utf8(octets) {
                 Ok(_) => {
-                    res.try_append_slice(octets)?;
+                    res.append_slice(octets)?;
                     break;
                 }
                 Err(err) => err,
@@ -280,11 +280,12 @@ impl<Octets> StrBuilder<Octets> {
         Ok(Self(res))
     }
 
-    pub fn from_utf8_lossy(
-        octets: Octets
-    ) -> <Octets as OctetsBuilder>::AppendResult<Self>
-    where Octets: AsRef<[u8]> + OctetsBuilder + EmptyBuilder {
-        Self::try_from_utf8_lossy(octets).collapse()
+    pub fn from_utf8_lossy(octets: Octets) -> Self
+    where
+        Octets: AsRef<[u8]> + OctetsBuilder + EmptyBuilder,
+        Octets::AppendError: Into<Infallible>
+    {
+        infallible(Self::try_from_utf8_lossy(octets))
     }
 
     /// Converts an octets builder into a string builder without checking.
@@ -345,32 +346,32 @@ impl<Octets> StrBuilder<Octets> {
     /// Appends a given string slice onto the end of this builder.
     pub fn try_push_str(
         &mut self, s: &str,
-    ) -> Result<(), Octets::BuildError<Infallible>>
+    ) -> Result<(), Octets::AppendError>
     where Octets: OctetsBuilder {
-        self.0.try_append_slice(s.as_bytes())
+        self.0.append_slice(s.as_bytes())
     }
 
     /// Appends a given string slice onto the end of this builder.
     pub fn push_str(
         &mut self, s: &str,
-    ) -> Octets::AppendResult<()>
-    where Octets: OctetsBuilder {
-        self.try_push_str(s).collapse()
+    ) 
+    where Octets: OctetsBuilder, Octets::AppendError: Into<Infallible>  {
+        infallible(self.try_push_str(s))
     }
 
     /// Appends the given character to the end of the builder.
     pub fn try_push(
         &mut self, ch: char
-    ) -> Result<(), Octets::BuildError<Infallible>>
+    ) -> Result<(), Octets::AppendError>
     where Octets: OctetsBuilder {
         let mut buf = [0u8; 4];
-        self.0.try_append_slice(ch.encode_utf8(&mut buf).as_bytes())
+        self.0.append_slice(ch.encode_utf8(&mut buf).as_bytes())
     }
 
     /// Appends the given character to the end of the builder.
-    pub fn push(&mut self, ch: char) -> Octets::AppendResult<()>
-    where Octets: OctetsBuilder {
-        self.try_push(ch).collapse()
+    pub fn push(&mut self, ch: char)
+    where Octets: OctetsBuilder, Octets::AppendError: Into<Infallible> {
+        infallible(self.try_push(ch))
     }
 
     /// Truncates the builder, keeping the first `new_len` octets.

@@ -39,14 +39,6 @@ use core::convert::Infallible;
 /// octet slices via their implementations of `AsRef<[u8]>` and
 /// `AsMut<[u8]>`.
 pub trait OctetsBuilder {
-    /// The type of the octets the builder can be converted into.
-    ///
-    /// If `Octets` implements [`IntoBuilder`], the `Builder` associated
-    /// type of that trait must be `Self`.
-    ///
-    /// [`IntoBuilder`]: trait.IntoBuilder.html
-    type Octets: AsRef<[u8]>;
-
     /// The error type when appending data fails.
     ///
     /// There are exactly two options for this type: Builders where appending
@@ -67,15 +59,10 @@ pub trait OctetsBuilder {
     fn append_slice(
         &mut self, slice: &[u8]
     ) -> Result<(), Self::AppendError>;
-
-    /// Converts the builder into immutable octets.
-    fn freeze(self) -> Self::Octets
-    where Self: Sized;
 }
 
 #[cfg(feature = "std")]
 impl OctetsBuilder for Vec<u8> {
-    type Octets = Self;
     type AppendError = Infallible;
 
     fn append_slice(
@@ -84,15 +71,10 @@ impl OctetsBuilder for Vec<u8> {
         self.extend_from_slice(slice);
         Ok(())
     }
-
-    fn freeze(self) -> Self::Octets {
-        self
-    }
 }
 
 #[cfg(feature = "std")]
 impl<'a> OctetsBuilder for Cow<'a, [u8]> {
-    type Octets = Self;
     type AppendError = Infallible;
 
     fn append_slice(
@@ -109,15 +91,10 @@ impl<'a> OctetsBuilder for Cow<'a, [u8]> {
         }
         Ok(())
     }
-
-    fn freeze(self) -> Self::Octets {
-        self
-    }
 }
 
 #[cfg(feature = "bytes")]
 impl OctetsBuilder for BytesMut {
-    type Octets = Bytes;
     type AppendError = Infallible;
 
     fn append_slice(
@@ -125,16 +102,11 @@ impl OctetsBuilder for BytesMut {
     ) -> Result<(), Self::AppendError> {
         self.extend_from_slice(slice);
         Ok(())
-    }
-
-    fn freeze(self) -> Self::Octets {
-        self.freeze()
     }
 }
 
 #[cfg(feature = "smallvec")]
 impl<A: smallvec::Array<Item = u8>> OctetsBuilder for smallvec::SmallVec<A> {
-    type Octets = Self;
     type AppendError = Infallible;
 
     fn append_slice(
@@ -143,25 +115,16 @@ impl<A: smallvec::Array<Item = u8>> OctetsBuilder for smallvec::SmallVec<A> {
         self.extend_from_slice(slice);
         Ok(())
     }
-
-    fn freeze(self) -> Self::Octets {
-        self
-    }
 }
 
 #[cfg(feature = "heapless")]
 impl<const N: usize> OctetsBuilder for heapless::Vec<u8, N> {
-    type Octets = Self;
     type AppendError = ShortBuf;
 
     fn append_slice(
         &mut self, slice: &[u8]
     ) -> Result<(), Self::AppendError> {
         self.extend_from_slice(slice).map_err(|_| ShortBuf)
-    }
-
-    fn freeze(self) -> Self::Octets {
-        self
     }
 }
 
@@ -292,6 +255,64 @@ impl<const N: usize> EmptyBuilder for heapless::Vec<u8, N> {
     }
 }
 
+
+//------------ FreezeBuilder -------------------------------------------------
+
+/// An octets builder that can be frozen into a imutable octets sequence.
+pub trait FreezeBuilder {
+    /// The type of octets sequence to builder will be frozen into.
+    type Octets;
+
+    /// Converts the octets builder into an imutable octets sequence.
+    fn freeze(self) -> Self::Octets;
+}
+
+#[cfg(feature = "std")]
+impl FreezeBuilder for Vec<u8> {
+    type Octets = Self;
+
+    fn freeze(self) -> Self::Octets {
+        self
+    }
+}
+
+#[cfg(feature = "std")]
+impl<'a> FreezeBuilder for Cow<'a, [u8]> {
+    type Octets = Self;
+
+    fn freeze(self) -> Self::Octets {
+        self
+    }
+}
+
+#[cfg(feature = "bytes")]
+impl FreezeBuilder for BytesMut {
+    type Octets = Bytes;
+
+    fn freeze(self) -> Self::Octets {
+        BytesMut::freeze(self)
+    }
+}
+
+#[cfg(feature = "smallvec")]
+impl<A: smallvec::Array<Item = u8>> FreezeBuilder for smallvec::SmallVec<A> {
+    type Octets = Self;
+
+    fn freeze(self) -> Self::Octets {
+        self
+    }
+}
+
+#[cfg(feature = "heapless")]
+impl<const N: usize> FreezeBuilder for heapless::Vec<u8, N> {
+    type Octets = Self;
+
+    fn freeze(self) -> Self::Octets {
+        self
+    }
+}
+
+
 //------------ IntoBuilder ---------------------------------------------------
 
 /// An octets type that can be converted into an octets builder.
@@ -366,7 +387,7 @@ impl<const N: usize> IntoBuilder for heapless::Vec<u8, N> {
 /// An octets type that can be created from an octets builder.
 pub trait FromBuilder: AsRef<[u8]> + Sized {
     /// The type of builder this octets type can be created from.
-    type Builder: OctetsBuilder<Octets = Self>;
+    type Builder: OctetsBuilder + FreezeBuilder<Octets = Self>;
 
     /// Creates an octets value from an octets builder.
     fn from_builder(builder: Self::Builder) -> Self;
@@ -433,7 +454,7 @@ impl<const N: usize> FromBuilder for heapless::Vec<u8, N> {
 pub struct ShortBuf;
 
 
-//--- From and CollapseResult
+//--- From
 
 impl From<Infallible> for ShortBuf {
     fn from(_: Infallible) -> ShortBuf {

@@ -7,7 +7,9 @@
 
 use core::{borrow, cmp, fmt, hash, ops, str};
 use core::convert::Infallible;
-use crate::builder::{EmptyBuilder, OctetsBuilder, Truncate, infallible};
+use crate::builder::{
+    EmptyBuilder, FreezeBuilder, OctetsBuilder, Truncate, infallible
+};
 
 
 //------------ Str -----------------------------------------------------------
@@ -309,7 +311,7 @@ impl<Octets> StrBuilder<Octets> {
 
     /// Converts the string builder into the final str.
     pub fn freeze(self) -> Str<Octets::Octets>
-    where Octets: OctetsBuilder {
+    where Octets: FreezeBuilder {
         Str(self.0.freeze())
     }
 

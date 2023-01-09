@@ -271,7 +271,7 @@ impl<'de, const N: usize> crate::serde::DeserializeOctets<'de> for Array<N> {
 #[cfg(feature = "serde")]
 pub struct ArrayVisitor<const N: usize>;
 
-#[cfg(feature = "heapless")]
+#[cfg(feature = "serde")]
 impl<const N: usize> ArrayVisitor<N> {
     pub fn deserialize<'de, D: serde::Deserializer<'de>>(
         self,

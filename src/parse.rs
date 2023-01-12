@@ -190,12 +190,36 @@ impl<Octs: AsRef<[u8]>> Parser<Octs> {
     ///
     /// If there aren’t enough octets left in the parser to fill the buffer
     /// completely, returns an error and leaves the parser untouched.
-    pub fn parse_parser(&mut self, len: usize) -> Result<Self, ShortInput>
-    where Octs: Clone {
+    pub fn parse_parser(
+        &mut self, len: usize
+    ) -> Result<Parser<Octs::Range<'_>>, ShortInput>
+    where Octs: Octets {
         self.check_len(len)?;
-        let mut res = self.clone();
-        res.len = res.pos + len;
+        let res = Parser {
+            octets: self.octets.range(..),
+            pos: self.pos,
+            len: self.pos + len
+        };
         self.pos += len;
+        Ok(res)
+    }
+
+    pub fn with_parser<F, T, E>(
+        &mut self, len: usize, op: F
+    ) -> Result<T, E>
+    where
+        F: FnOnce(&mut Self) -> Result<T, E>,
+        E: From<ShortInput>
+    {
+        let new_pos = self.pos + len;
+        let len = self.len;
+        if new_pos > len {
+            return Err(ShortInput(()).into())
+        }
+        self.len = new_pos;
+        let res = op(self)?;
+        self.len = len;
+        self.pos = new_pos;
         Ok(res)
     }
 

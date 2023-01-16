@@ -12,13 +12,12 @@
 //! lifetime limitations a slice would bring. Therefore, `Octets` allows
 //! defining the type of a range as an associated type.
 
-
 use core::convert::Infallible;
 use core::ops::{Index, RangeBounds};
 #[cfg(feature = "bytes")] use bytes::{Bytes, BytesMut};
 #[cfg(feature = "std")] use std::borrow::Cow;
 #[cfg(feature = "std")] use std::vec::Vec;
-#[cfg(feature = "heapless")] use crate::builder::ShortBuf;
+use crate::builder::ShortBuf;
 
 
 //------------ Octets --------------------------------------------------------
@@ -119,7 +118,7 @@ impl<const N: usize> Octets for heapless::Vec<u8, N> {
 /// This is different from just `From` in that the conversion may fail if the
 /// source sequence is longer than the space available for the target type.
 pub trait OctetsFrom<Source>: Sized {
-    type Error;
+    type Error: Into<ShortBuf>;
 
     /// Performs the conversion.
     fn try_octets_from(source: Source) -> Result<Self, Self::Error>;
@@ -219,7 +218,7 @@ where
 /// This trait has a blanket implementation for all pairs of types where
 /// `OctetsFrom` has been implemented.
 pub trait OctetsInto<Target>: Sized {
-    type Error;
+    type Error: Into<ShortBuf>;
 
     /// Performs the conversion.
     fn try_octets_into(self) -> Result<Target, Self::Error>;

@@ -87,7 +87,10 @@ impl<const N: usize> SerializeOctets for heapless::Vec<u8, N> {
 /// This type can be used where a `Serialize` value is required.
 pub struct AsSerializedOctets<'a, T: ?Sized>(&'a T);
 
-impl<'a, T: SerializeOctets> serde::Serialize for AsSerializedOctets<'a, T> {
+impl<'a, T: SerializeOctets> serde::Serialize for AsSerializedOctets<'a, T>
+where
+    T: SerializeOctets + ?Sized
+{
     fn serialize<S: serde::Serializer>(
         &self,
         serializer: S,

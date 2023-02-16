@@ -1,10 +1,11 @@
 
 use core::{cmp, fmt};
+use core::ops::RangeBounds;
 use crate::builder::{
     EmptyBuilder, FreezeBuilder, FromBuilder, IntoBuilder, OctetsBuilder,
     ShortBuf, Truncate,
 };
-use crate::octets::OctetsFrom;
+use crate::octets::{Octets, OctetsFrom};
 
 
 //------------ Array ---------------------------------------------------------
@@ -102,6 +103,16 @@ impl<const N: usize> core::borrow::Borrow<[u8]> for Array<N> {
 impl<const N: usize> core::borrow::BorrowMut<[u8]> for Array<N> {
     fn borrow_mut(&mut self) -> &mut [u8] {
         self.as_slice_mut()
+    }
+}
+
+//--- Truncate
+
+impl<const N: usize> Octets for Array<N> {
+    type Range<'a> = &'a [u8];
+
+    fn range(&self, range: impl RangeBounds<usize>) -> Self::Range<'_> {
+        self.as_slice().range(range)
     }
 }
 

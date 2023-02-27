@@ -200,7 +200,7 @@ impl<'a, Octs: AsRef<[u8]> + ?Sized> Parser<'a, Octs> {
     /// completely, returns an error and leaves the parser untouched.
     pub fn parse_parser(&mut self, len: usize) -> Result<Self, ShortInput> {
         self.check_len(len)?;
-        let mut res = self.clone();
+        let mut res = *self;
         res.len = res.pos + len;
         self.pos += len;
         Ok(res)

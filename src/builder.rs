@@ -61,6 +61,16 @@ pub trait OctetsBuilder {
     ) -> Result<(), Self::AppendError>;
 }
 
+impl<'a, T: OctetsBuilder> OctetsBuilder for &'a mut T {
+    type AppendError = T::AppendError;
+
+    fn append_slice(
+        &mut self, slice: &[u8]
+    ) -> Result<(), Self::AppendError> {
+        (*self).append_slice(slice)
+    }
+}
+
 #[cfg(feature = "std")]
 impl OctetsBuilder for Vec<u8> {
     type AppendError = Infallible;
@@ -137,6 +147,12 @@ pub trait Truncate {
     ///
     /// If `len` is larger than the length of the sequence, nothing happens.
     fn truncate(&mut self, len: usize);
+}
+
+impl<'a, T: Truncate> Truncate for &'a mut T {
+    fn truncate(&mut self, len: usize) {
+        (*self).truncate(len)
+    }
 }
 
 impl<'a> Truncate for &'a [u8] {

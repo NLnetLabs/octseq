@@ -77,6 +77,15 @@ impl Octets for Vec<u8> {
     }
 }
 
+#[cfg(feature = "std")]
+impl Octets for std::sync::Arc<[u8]> {
+    type Range<'a> = &'a [u8];
+
+    fn range(&self, range: impl RangeBounds<usize>) -> Self::Range<'_> {
+        self.as_ref().range(range)
+    }
+}
+
 #[cfg(feature = "bytes")]
 impl Octets for Bytes {
     type Range<'a> = Bytes;

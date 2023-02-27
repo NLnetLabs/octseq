@@ -25,6 +25,11 @@ New
   and return them as a cloned parser. ([#10])
 * Add methods to `Parser` to parse 64 and 128 bit integers. ([#11])
 * Added support for the `heapless` crate. ([#19])
+* Added missing `Octets` implementation for `Array<N>`. ([#29])
+* Added `Octets` implementation for `Arc<[u8]>`. ([#28])
+* Added blanket implementations for `OctetsBuilder` and `Truncate` for
+  mutable references of types that are `OctetsBuilder` and `Truncate`,
+  respectively. ([#30])
 
 Bug Fixes
 
@@ -38,6 +43,9 @@ Other Changes
 [#19]: https://github.com/NLnetLabs/octseq/pull/19
 [#21]: https://github.com/NLnetLabs/octseq/pull/21
 [#25]: https://github.com/NLnetLabs/octseq/pull/25
+[#28]: https://github.com/NLnetLabs/octseq/pull/28
+[#29]: https://github.com/NLnetLabs/octseq/pull/29
+[#30]: https://github.com/NLnetLabs/octseq/pull/30
 
 
 ## 0.1.0

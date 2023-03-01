@@ -30,6 +30,7 @@ New
 * Added blanket implementations for `OctetsBuilder` and `Truncate` for
   mutable references of types that are `OctetsBuilder` and `Truncate`,
   respectively. ([#30])
+* Added conversions from `&str` and `&[u8]` to `Str<[u8]>`. ([#31])
 
 Bug Fixes
 
@@ -46,6 +47,7 @@ Other Changes
 [#28]: https://github.com/NLnetLabs/octseq/pull/28
 [#29]: https://github.com/NLnetLabs/octseq/pull/29
 [#30]: https://github.com/NLnetLabs/octseq/pull/30
+[#31]: https://github.com/NLnetLabs/octseq/pull/31
 
 
 ## 0.1.0

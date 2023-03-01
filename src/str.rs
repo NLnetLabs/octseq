@@ -16,7 +16,7 @@ use crate::builder::{
 
 /// A fixed length UTF-8 encoded string atop an octet sequence.
 #[derive(Clone, Default)]
-pub struct Str<Octets>(Octets);
+pub struct Str<Octets: ?Sized>(Octets);
 
 impl<Octets> Str<Octets> {
     /// Converts a sequence of octets into a string.
@@ -39,12 +39,41 @@ impl<Octets> Str<Octets> {
     pub unsafe fn from_utf8_unchecked(octets: Octets) -> Self {
         Self(octets)
     }
+}
 
+impl Str<[u8]> {
+    /// Creates a string value from a UTF-8 slice.
+    pub fn from_utf8_slice(
+        slice: &[u8]
+    ) -> Result<&Self, FromUtf8Error<&[u8]>> {
+        match str::from_utf8(slice) {
+            Ok(s) => Ok(Self::from_str(s)),
+            Err(error) => Err(FromUtf8Error { octets: slice, error })
+        }
+    }
+
+    /// Creates a string value from a string slice.
+    #[allow(clippy::should_implement_trait)]
+    pub fn from_str(s: &str) -> &Self {
+        unsafe { &*(s as *const str as *const Self) }
+    }
+}
+
+#[cfg(feature = "std")]
+impl Str<std::vec::Vec<u8>> {
+    pub fn from_string(s: std::string::String) -> Self {
+        unsafe { Self::from_utf8_unchecked(s.into_bytes()) }
+    }
+}
+
+impl<Octets> Str<Octets> {
     /// Converts the string into its raw octets.
     pub fn into_octets(self) -> Octets {
         self.0
     }
+}
 
+impl<Octets: ?Sized> Str<Octets> {
     /// Returns the string as a string slice.
     pub fn as_str(&self) -> &str
     where Octets: AsRef<[u8]> {
@@ -105,7 +134,7 @@ impl<Octets> Str<Octets> {
 
 //--- Deref, DerefMut, AsRef, AsMut, Borrow, BorrowMut
 
-impl<Octets: AsRef<[u8]>> ops::Deref for Str<Octets> {
+impl<Octets: AsRef<[u8]> + ?Sized> ops::Deref for Str<Octets> {
     type Target = str;
 
     fn deref(&self) -> &Self::Target {
@@ -113,44 +142,45 @@ impl<Octets: AsRef<[u8]>> ops::Deref for Str<Octets> {
     }
 }
 
-impl<Octets: AsRef<[u8]> + AsMut<[u8]>> ops::DerefMut for Str<Octets> {
+impl<Octets> ops::DerefMut for Str<Octets>
+where Octets: AsRef<[u8]> + AsMut<[u8]> + ?Sized {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.as_str_mut()
     }
 }
 
-impl<Octets: AsRef<[u8]>> AsRef<str> for Str<Octets>{
+impl<Octets: AsRef<[u8]> + ?Sized> AsRef<str> for Str<Octets>{
     fn as_ref(&self) -> &str {
         self.as_str()
     }
 }
 
-impl<Octets: AsRef<[u8]>> AsRef<[u8]> for Str<Octets>{
+impl<Octets: AsRef<[u8]> + ?Sized> AsRef<[u8]> for Str<Octets>{
     fn as_ref(&self) -> &[u8] {
         self.as_slice()
     }
 }
 
-impl<Octets: AsMut<[u8]>> AsMut<str> for Str<Octets> {
+impl<Octets: AsMut<[u8]> + ?Sized> AsMut<str> for Str<Octets> {
     fn as_mut(&mut self) -> &mut str {
         self.as_str_mut()
     }
 }
 
-impl<Octets: AsRef<[u8]>> borrow::Borrow<str> for Str<Octets>{
+impl<Octets: AsRef<[u8]> + ?Sized> borrow::Borrow<str> for Str<Octets>{
     fn borrow(&self) -> &str {
         self.as_str()
     }
 }
 
-impl<Octets: AsRef<[u8]>> borrow::Borrow<[u8]> for Str<Octets>{
+impl<Octets: AsRef<[u8]> + ?Sized> borrow::Borrow<[u8]> for Str<Octets>{
     fn borrow(&self) -> &[u8] {
         self.as_slice()
     }
 }
 
 impl<Octets> borrow::BorrowMut<str> for Str<Octets> 
-where Octets: AsRef<[u8]> +  AsMut<[u8]> {
+where Octets: AsRef<[u8]> +  AsMut<[u8]> + ?Sized {
     fn borrow_mut(&mut self) -> &mut str {
         self.as_str_mut()
     }
@@ -158,13 +188,13 @@ where Octets: AsRef<[u8]> +  AsMut<[u8]> {
 
 //--- Debug and Display
 
-impl<Octets: AsRef<[u8]>> fmt::Debug for Str<Octets> {
+impl<Octets: AsRef<[u8]> + ?Sized> fmt::Debug for Str<Octets> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         fmt::Debug::fmt(self.as_str(), f)
     }
 }
 
-impl<Octets: AsRef<[u8]>> fmt::Display for Str<Octets> {
+impl<Octets: AsRef<[u8]> + ?Sized> fmt::Display for Str<Octets> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         fmt::Display::fmt(self.as_str(), f)
     }
@@ -174,19 +204,19 @@ impl<Octets: AsRef<[u8]>> fmt::Display for Str<Octets> {
 
 impl<Octets, Other> PartialEq<Other> for Str<Octets>
 where
-    Octets: AsRef<[u8]>,
-    Other: AsRef<str>,
+    Octets: AsRef<[u8]> + ?Sized,
+    Other: AsRef<str> + ?Sized,
 {
     fn eq(&self, other: &Other) -> bool {
         self.as_str().eq(other.as_ref())
     }
 }
 
-impl<Octets: AsRef<[u8]>> Eq for Str<Octets> { }
+impl<Octets: AsRef<[u8]> + ?Sized> Eq for Str<Octets> { }
 
 //--- Hash
 
-impl<Octets: AsRef<[u8]>> hash::Hash for Str<Octets> {
+impl<Octets: AsRef<[u8]> + ?Sized> hash::Hash for Str<Octets> {
     fn hash<H: hash::Hasher>(&self, state: &mut H) {
         self.as_str().hash(state)
     }
@@ -196,15 +226,15 @@ impl<Octets: AsRef<[u8]>> hash::Hash for Str<Octets> {
 
 impl<Octets, Other> PartialOrd<Other> for Str<Octets>
 where
-    Octets: AsRef<[u8]>,
-    Other: AsRef<str>,
+    Octets: AsRef<[u8]> + ?Sized,
+    Other: AsRef<str> + ?Sized,
 {
     fn partial_cmp(&self, other: &Other) -> Option<cmp::Ordering> {
         self.as_str().partial_cmp(other.as_ref())
     }
 }
 
-impl<Octets: AsRef<[u8]>> Ord for Str<Octets> {
+impl<Octets: AsRef<[u8]> + ?Sized> Ord for Str<Octets> {
     fn cmp(&self, other: &Self) -> cmp::Ordering {
         self.as_str().cmp(other.as_str())
     }

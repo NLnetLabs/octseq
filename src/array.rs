@@ -40,13 +40,15 @@ impl<const N: usize> Array<N> {
     /// content of the additional octets will be left at whatever they
     /// were.
     ///
-    /// # Panics
-    ///
-    /// The method panics if `new_len` is larger than the array size
-    /// `const N`.
-    pub fn resize_raw(&mut self, new_len: usize) {
-        assert!(new_len < N);
-        self.len = new_len
+    /// Returns an error if `new_len` is larger than the array size.
+    pub fn resize_raw(&mut self, new_len: usize) -> Result<(), ShortBuf> {
+        if new_len >= N {
+            Err(ShortBuf)
+        }
+        else {
+            self.len = new_len;
+            Ok(())
+        }
     }
 }
 

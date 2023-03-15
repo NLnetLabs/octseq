@@ -1,3 +1,4 @@
+//! A fixed-capacity octets sequence.
 
 use core::{cmp, fmt};
 use core::ops::RangeBounds;
@@ -30,6 +31,22 @@ impl<const N: usize> Array<N> {
     /// Returns a mutable octets slice with the content of the array.
     pub fn as_slice_mut(&mut self) -> &mut [u8] {
         &mut self.octets[..self.len]
+    }
+
+    /// Resizes the array in place updating additional octets.
+    ///
+    /// The method only changes the length of the contained octets
+    /// sequence. If `new_len` is greater than the current length, the
+    /// content of the additional octets will be left at whatever they
+    /// were.
+    ///
+    /// # Panics
+    ///
+    /// The method panics if `new_len` is larger than the array size
+    /// `const N`.
+    pub fn resize_raw(&mut self, new_len: usize) {
+        assert!(new_len < N);
+        self.len = new_len
     }
 }
 

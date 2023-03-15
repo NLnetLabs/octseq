@@ -31,6 +31,7 @@ New
   mutable references of types that are `OctetsBuilder` and `Truncate`,
   respectively. ([#30])
 * Added conversions from `&str` and `&[u8]` to `Str<[u8]>`. ([#31])
+* Added `Array::resize_raw`. ([#32])
 
 Bug Fixes
 
@@ -48,6 +49,7 @@ Other Changes
 [#29]: https://github.com/NLnetLabs/octseq/pull/29
 [#30]: https://github.com/NLnetLabs/octseq/pull/30
 [#31]: https://github.com/NLnetLabs/octseq/pull/31
+[#32]: https://github.com/NLnetLabs/octseq/pull/32
 
 
 ## 0.1.0

@@ -531,48 +531,48 @@ mod test {
     #[test]
     fn parse_i8() {
         let mut parser = Parser::from_static(b"\x12\xd6");
-        assert_eq!(parser.parse_i8(), Ok(0x12));
-        assert_eq!(parser.parse_i8(), Ok(-42));
+        assert_eq!(parser.parse_i8(), Ok(0x12_i8));
+        assert_eq!(parser.parse_i8(), Ok(-42_i8));
         assert!(parser.parse_i8().is_err());
     }
 
     #[test]
     fn parse_u8() {
         let mut parser = Parser::from_static(b"\x12\xd6");
-        assert_eq!(parser.parse_u8(), Ok(0x12));
-        assert_eq!(parser.parse_u8(), Ok(0xd6));
+        assert_eq!(parser.parse_u8(), Ok(0x12_u8));
+        assert_eq!(parser.parse_u8(), Ok(0xd6_u8));
         assert!(parser.parse_u8().is_err());
     }
 
     #[test]
     fn parse_i16_be() {
         let mut parser = Parser::from_static(b"\x12\x34\xef\x6e\0");
-        assert_eq!(parser.parse_i16_be(), Ok(0x1234));
-        assert_eq!(parser.parse_i16_be(), Ok(-4242));
+        assert_eq!(parser.parse_i16_be(), Ok(0x1234_i16));
+        assert_eq!(parser.parse_i16_be(), Ok(-4242_i16));
         assert!(parser.parse_i16_be().is_err());
     }
 
     #[test]
     fn parse_i16_le() {
         let mut parser = Parser::from_static(b"\x34\x12\x6e\xef\0");
-        assert_eq!(parser.parse_i16_le(), Ok(0x1234));
-        assert_eq!(parser.parse_i16_le(), Ok(-4242));
+        assert_eq!(parser.parse_i16_le(), Ok(0x1234_i16));
+        assert_eq!(parser.parse_i16_le(), Ok(-4242_i16));
         assert!(parser.parse_i16_le().is_err());
     }
 
     #[test]
     fn parse_u16_be() {
         let mut parser = Parser::from_static(b"\x12\x34\xef\x6e\0");
-        assert_eq!(parser.parse_u16_be(), Ok(0x1234));
-        assert_eq!(parser.parse_u16_be(), Ok(0xef6e));
+        assert_eq!(parser.parse_u16_be(), Ok(0x1234_u16));
+        assert_eq!(parser.parse_u16_be(), Ok(0xef6e_u16));
         assert!(parser.parse_u16_be().is_err());
     }
 
     #[test]
     fn parse_u16_le() {
         let mut parser = Parser::from_static(b"\x34\x12\x6e\xef\0");
-        assert_eq!(parser.parse_u16_le(), Ok(0x1234));
-        assert_eq!(parser.parse_u16_le(), Ok(0xef6e));
+        assert_eq!(parser.parse_u16_le(), Ok(0x1234_u16));
+        assert_eq!(parser.parse_u16_le(), Ok(0xef6e_u16));
         assert!(parser.parse_u16_le().is_err());
     }
 
@@ -580,8 +580,8 @@ mod test {
     fn parse_i32_be() {
         let mut parser =
             Parser::from_static(b"\x12\x34\x56\x78\xfd\x78\xa8\x4e\0\0\0");
-        assert_eq!(parser.parse_i32_be(), Ok(0x12345678));
-        assert_eq!(parser.parse_i32_be(), Ok(-42424242));
+        assert_eq!(parser.parse_i32_be(), Ok(0x12345678_i32));
+        assert_eq!(parser.parse_i32_be(), Ok(-42424242_i32));
         assert!(parser.parse_i32_be().is_err());
     }
 
@@ -589,8 +589,8 @@ mod test {
     fn parse_i32_le() {
         let mut parser =
             Parser::from_static(b"\x78\x56\x34\x12\x4e\xa8\x78\xfd\0\0\0");
-        assert_eq!(parser.parse_i32_le(), Ok(0x12345678));
-        assert_eq!(parser.parse_i32_le(), Ok(-42424242));
+        assert_eq!(parser.parse_i32_le(), Ok(0x12345678_i32));
+        assert_eq!(parser.parse_i32_le(), Ok(-42424242_i32));
         assert!(parser.parse_i32_le().is_err());
     }
 
@@ -598,8 +598,8 @@ mod test {
     fn parse_u32_be() {
         let mut parser =
             Parser::from_static(b"\x12\x34\x56\x78\xfd\x78\xa8\x4e\0\0\0");
-        assert_eq!(parser.parse_u32_be(), Ok(0x12345678));
-        assert_eq!(parser.parse_u32_be(), Ok(0xfd78a84e));
+        assert_eq!(parser.parse_u32_be(), Ok(0x12345678_u32));
+        assert_eq!(parser.parse_u32_be(), Ok(0xfd78a84e_u32));
         assert!(parser.parse_u32_be().is_err());
     }
 
@@ -607,8 +607,8 @@ mod test {
     fn parse_u32_le() {
         let mut parser =
             Parser::from_static(b"\x78\x56\x34\x12\x4e\xa8\x78\xfd\0\0\0");
-        assert_eq!(parser.parse_u32_le(), Ok(0x12345678));
-        assert_eq!(parser.parse_u32_le(), Ok(0xfd78a84e));
+        assert_eq!(parser.parse_u32_le(), Ok(0x12345678_u32));
+        assert_eq!(parser.parse_u32_le(), Ok(0xfd78a84e_u32));
         assert!(parser.parse_u32_le().is_err());
     }
 
@@ -619,8 +619,8 @@ mod test {
               \xce\x7a\xba\x26\xdd\x0f\x29\x99\
               \0\0\0"
         );
-        assert_eq!(parser.parse_i64_be(), Ok(0x12345678fd78a84e));
-        assert_eq!(parser.parse_i64_be(), Ok(-3568335078657414759));
+        assert_eq!(parser.parse_i64_be(), Ok(0x12345678fd78a84e_i64));
+        assert_eq!(parser.parse_i64_be(), Ok(-3568335078657414759_i64));
         assert!(parser.parse_i64_be().is_err());
     }
 
@@ -631,8 +631,8 @@ mod test {
               \x99\x29\x0f\xdd\x26\xba\x7a\xce\
               \0\0\0"
         );
-        assert_eq!(parser.parse_i64_le(), Ok(0x12345678fd78a84e));
-        assert_eq!(parser.parse_i64_le(), Ok(-3568335078657414759));
+        assert_eq!(parser.parse_i64_le(), Ok(0x12345678fd78a84e_i64));
+        assert_eq!(parser.parse_i64_le(), Ok(-3568335078657414759_i64));
         assert!(parser.parse_i64_le().is_err());
     }
 
@@ -643,8 +643,8 @@ mod test {
               \xce\x7a\xba\x26\xdd\x0f\x29\x99\
               \0\0\0"
         );
-        assert_eq!(parser.parse_u64_be(), Ok(0x12345678fd78a84e));
-        assert_eq!(parser.parse_u64_be(), Ok(0xce7aba26dd0f2999));
+        assert_eq!(parser.parse_u64_be(), Ok(0x12345678fd78a84e_u64));
+        assert_eq!(parser.parse_u64_be(), Ok(0xce7aba26dd0f2999_u64));
         assert!(parser.parse_u64_be().is_err());
     }
 
@@ -655,8 +655,8 @@ mod test {
               \x99\x29\x0f\xdd\x26\xba\x7a\xce\
               \0\0\0"
         );
-        assert_eq!(parser.parse_u64_le(), Ok(0x12345678fd78a84e));
-        assert_eq!(parser.parse_u64_le(), Ok(0xce7aba26dd0f2999));
+        assert_eq!(parser.parse_u64_le(), Ok(0x12345678fd78a84e_u64));
+        assert_eq!(parser.parse_u64_le(), Ok(0xce7aba26dd0f2999_u64));
         assert!(parser.parse_u64_le().is_err());
     }
 
@@ -670,10 +670,10 @@ mod test {
               \0\0\0\0\0"
         );
         assert_eq!(parser.parse_i128_be(),
-            Ok(0x12345678fd78a84ece7aba26dd0f2999)
+            Ok(0x12345678fd78a84ece7aba26dd0f2999_i128)
         );
         assert_eq!(parser.parse_i128_be(),
-            Ok(-9605457846724395475894107919101750112)
+            Ok(-9605457846724395475894107919101750112_i128)
         );
         assert!(parser.parse_i128_be().is_err());
     }
@@ -688,10 +688,10 @@ mod test {
               \0\0\0\0\0"
         );
         assert_eq!(parser.parse_i128_le(),
-            Ok(0x12345678fd78a84ece7aba26dd0f2999)
+            Ok(0x12345678fd78a84ece7aba26dd0f2999_i128)
         );
         assert_eq!(parser.parse_i128_le(),
-            Ok(-9605457846724395475894107919101750112)
+            Ok(-9605457846724395475894107919101750112_i128)
         );
         assert!(parser.parse_i128_le().is_err());
     }
@@ -706,10 +706,10 @@ mod test {
               \0\0\0\0\0"
         );
         assert_eq!(parser.parse_u128_be(),
-            Ok(0x12345678fd78a84ece7aba26dd0f2999)
+            Ok(0x12345678fd78a84ece7aba26dd0f2999_u128)
         );
         assert_eq!(parser.parse_u128_be(),
-            Ok(0xf8c60e5d3f5e3a7438388f3f57a794a0)
+            Ok(0xf8c60e5d3f5e3a7438388f3f57a794a0_u128)
         );
         assert!(parser.parse_u128_be().is_err());
     }
@@ -724,10 +724,10 @@ mod test {
               \0\0\0\0\0"
         );
         assert_eq!(parser.parse_u128_le(),
-            Ok(0x12345678fd78a84ece7aba26dd0f2999)
+            Ok(0x12345678fd78a84ece7aba26dd0f2999_u128)
         );
         assert_eq!(parser.parse_u128_le(),
-            Ok(0xf8c60e5d3f5e3a7438388f3f57a794a0)
+            Ok(0xf8c60e5d3f5e3a7438388f3f57a794a0_u128)
         );
         assert!(parser.parse_u128_le().is_err());
     }

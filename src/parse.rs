@@ -225,101 +225,183 @@ impl<'a, Octs: AsRef<[u8]> + ?Sized> Parser<'a, Octs> {
         self.pos += 1;
         Ok(res)
     }
+}
 
-    /// Takes an `i16` from the beginning of the parser.
+impl<'a, Octs: AsRef<[u8]> + ?Sized> Parser<'a, Octs> {
+    /// Takes a big-endian `i16` from the beginning of the parser.
     ///
-    /// The value is converted from network byte order into the system’s own
-    /// byte order if necessary. The parser is advanced by two octets. If
-    /// there aren’t enough octets left, leaves the parser untouched and
-    /// returns an error instead.
-    pub fn parse_i16(&mut self) -> Result<i16, ShortInput> {
+    /// The value is converted into the system’s own byte order if necessary.
+    /// The parser is advanced by two octets. If there aren’t enough octets
+    /// left, leaves the parser untouched and returns an error instead.
+    pub fn parse_i16_be(&mut self) -> Result<i16, ShortInput> {
         let mut res = [0; 2];
         self.parse_buf(&mut res)?;
         Ok(i16::from_be_bytes(res))
     }
 
-    /// Takes a `u16` from the beginning of the parser.
+    /// Takes a little-endian `i16` from the beginning of the parser.
     ///
-    /// The value is converted from network byte order into the system’s own
-    /// byte order if necessary. The parser is advanced by two ocetets. If
-    /// there aren’t enough octets left, leaves the parser untouched and
-    /// returns an error instead.
-    pub fn parse_u16(&mut self) -> Result<u16, ShortInput> {
+    /// The value is converted into the system’s own byte order if necessary.
+    /// The parser is advanced by two octets. If there aren’t enough octets
+    /// left, leaves the parser untouched and returns an error instead.
+    pub fn parse_i16_le(&mut self) -> Result<i16, ShortInput> {
+        let mut res = [0; 2];
+        self.parse_buf(&mut res)?;
+        Ok(i16::from_le_bytes(res))
+    }
+
+    /// Takes a big-endian `u16` from the beginning of the parser.
+    ///
+    /// The value is converted into the system’s own byte order if necessary.
+    /// The parser is advanced by two octets. If there aren’t enough octets
+    /// left, leaves the parser untouched and returns an error instead.
+    pub fn parse_u16_be(&mut self) -> Result<u16, ShortInput> {
         let mut res = [0; 2];
         self.parse_buf(&mut res)?;
         Ok(u16::from_be_bytes(res))
     }
 
-    /// Takes an `i32` from the beginning of the parser.
+    /// Takes a little-endian `u16` from the beginning of the parser.
     ///
-    /// The value is converted from network byte order into the system’s own
-    /// byte order if necessary. The parser is advanced by four octets. If
-    /// there aren’t enough octets left, leaves the parser untouched and
-    /// returns an error instead.
-    pub fn parse_i32(&mut self) -> Result<i32, ShortInput> {
+    /// The value is converted into the system’s own byte order if necessary.
+    /// The parser is advanced by two octets. If there aren’t enough octets
+    /// left, leaves the parser untouched and returns an error instead.
+    pub fn parse_u16_le(&mut self) -> Result<u16, ShortInput> {
+        let mut res = [0; 2];
+        self.parse_buf(&mut res)?;
+        Ok(u16::from_le_bytes(res))
+    }
+
+    /// Takes a big-endian `i32` from the beginning of the parser.
+    ///
+    /// The value is converted into the system’s own byte order if necessary.
+    /// The parser is advanced by four octets. If there aren’t enough octets
+    /// left, leaves the parser untouched and returns an error instead.
+    pub fn parse_i32_be(&mut self) -> Result<i32, ShortInput> {
         let mut res = [0; 4];
         self.parse_buf(&mut res)?;
         Ok(i32::from_be_bytes(res))
     }
 
-    /// Takes a `u32` from the beginning of the parser.
+    /// Takes a little-endian `i32` from the beginning of the parser.
     ///
-    /// The value is converted from network byte order into the system’s own
-    /// byte order if necessary. The parser is advanced by four octets. If
-    /// there aren’t enough octets left, leaves the parser untouched and
-    /// returns an error instead.
-    pub fn parse_u32(&mut self) -> Result<u32, ShortInput> {
+    /// The value is converted into the system’s own byte order if necessary.
+    /// The parser is advanced by four octets. If there aren’t enough octets
+    /// left, leaves the parser untouched and returns an error instead.
+    pub fn parse_i32_le(&mut self) -> Result<i32, ShortInput> {
+        let mut res = [0; 4];
+        self.parse_buf(&mut res)?;
+        Ok(i32::from_le_bytes(res))
+    }
+
+    /// Takes a big-endian `u32` from the beginning of the parser.
+    ///
+    /// The value is converted into the system’s own byte order if necessary.
+    /// The parser is advanced by four octets. If there aren’t enough octets
+    /// left, leaves the parser untouched and returns an error instead.
+    pub fn parse_u32_be(&mut self) -> Result<u32, ShortInput> {
         let mut res = [0; 4];
         self.parse_buf(&mut res)?;
         Ok(u32::from_be_bytes(res))
     }
 
-    /// Takes an `i64` from the beginning of the parser.
+    /// Takes a little-endian `u32` from the beginning of the parser.
     ///
-    /// The value is converted from network byte order into the system’s own
-    /// byte order if necessary. The parser is advanced by eight octets. If
-    /// there aren’t enough octets left, leaves the parser untouched and
-    /// returns an error instead.
-    pub fn parse_i64(&mut self) -> Result<i64, ShortInput> {
+    /// The value is converted into the system’s own byte order if necessary.
+    /// The parser is advanced by four octets. If there aren’t enough octets
+    /// left, leaves the parser untouched and returns an error instead.
+    pub fn parse_u32_le(&mut self) -> Result<u32, ShortInput> {
+        let mut res = [0; 4];
+        self.parse_buf(&mut res)?;
+        Ok(u32::from_le_bytes(res))
+    }
+
+    /// Takes a big-endian `i64` from the beginning of the parser.
+    ///
+    /// The value is converted into the system’s own byte order if necessary.
+    /// The parser is advanced by eight octets. If there aren’t enough octets
+    /// left, leaves the parser untouched and returns an error instead.
+    pub fn parse_i64_be(&mut self) -> Result<i64, ShortInput> {
         let mut res = [0; 8];
         self.parse_buf(&mut res)?;
         Ok(i64::from_be_bytes(res))
     }
 
-    /// Takes a `u64` from the beginning of the parser.
+    /// Takes a little-endian `i64` from the beginning of the parser.
     ///
-    /// The value is converted from network byte order into the system’s own
-    /// byte order if necessary. The parser is advanced by four octets. If
-    /// there aren’t enough octets left, leaves the parser untouched and
-    /// returns an error instead.
-    pub fn parse_u64(&mut self) -> Result<u64, ShortInput> {
+    /// The value is converted into the system’s own byte order if necessary.
+    /// The parser is advanced by eight octets. If there aren’t enough octets
+    /// left, leaves the parser untouched and returns an error instead.
+    pub fn parse_i64_le(&mut self) -> Result<i64, ShortInput> {
+        let mut res = [0; 8];
+        self.parse_buf(&mut res)?;
+        Ok(i64::from_le_bytes(res))
+    }
+
+    /// Takes a big-endian `u64` from the beginning of the parser.
+    ///
+    /// The value is converted into the system’s own byte order if necessary.
+    /// The parser is advanced by eight octets. If there aren’t enough octets
+    /// left, leaves the parser untouched and returns an error instead.
+    pub fn parse_u64_be(&mut self) -> Result<u64, ShortInput> {
         let mut res = [0; 8];
         self.parse_buf(&mut res)?;
         Ok(u64::from_be_bytes(res))
     }
 
-    /// Takes a `i128` from the beginning of the parser.
+    /// Takes a little-endian `u64` from the beginning of the parser.
     ///
-    /// The value is converted from network byte order into the system’s own
-    /// byte order if necessary. The parser is advanced by sixteen octets. If
-    /// there aren’t enough octets left, leaves the parser untouched and
-    /// returns an error instead.
-    pub fn parse_i128(&mut self) -> Result<i128, ShortInput> {
+    /// The value is converted into the system’s own byte order if necessary.
+    /// The parser is advanced by eight octets. If there aren’t enough octets
+    /// left, leaves the parser untouched and returns an error instead.
+    pub fn parse_u64_le(&mut self) -> Result<u64, ShortInput> {
+        let mut res = [0; 8];
+        self.parse_buf(&mut res)?;
+        Ok(u64::from_le_bytes(res))
+    }
+
+    /// Takes a big-endian `i128` from the beginning of the parser.
+    ///
+    /// The value is converted into the system’s own byte order if necessary.
+    /// The parser is advanced by 16 octets. If there aren’t enough octets
+    /// left, leaves the parser untouched and returns an error instead.
+    pub fn parse_i128_be(&mut self) -> Result<i128, ShortInput> {
         let mut res = [0; 16];
         self.parse_buf(&mut res)?;
         Ok(i128::from_be_bytes(res))
     }
 
-    /// Takes a `u128` from the beginning of the parser.
+    /// Takes a little-endian `i128` from the beginning of the parser.
     ///
-    /// The value is converted from network byte order into the system’s own
-    /// byte order if necessary. The parser is advanced by sixteen octets. If
-    /// there aren’t enough octets left, leaves the parser untouched and
-    /// returns an error instead.
-    pub fn parse_u128(&mut self) -> Result<u128, ShortInput> {
+    /// The value is converted into the system’s own byte order if necessary.
+    /// The parser is advanced by 16 octets. If there aren’t enough octets
+    /// left, leaves the parser untouched and returns an error instead.
+    pub fn parse_i128_le(&mut self) -> Result<i128, ShortInput> {
+        let mut res = [0; 16];
+        self.parse_buf(&mut res)?;
+        Ok(i128::from_le_bytes(res))
+    }
+
+    /// Takes a big-endian `u128` from the beginning of the parser.
+    ///
+    /// The value is converted into the system’s own byte order if necessary.
+    /// The parser is advanced by 16 octets. If there aren’t enough octets
+    /// left, leaves the parser untouched and returns an error instead.
+    pub fn parse_u128_be(&mut self) -> Result<u128, ShortInput> {
         let mut res = [0; 16];
         self.parse_buf(&mut res)?;
         Ok(u128::from_be_bytes(res))
+    }
+
+    /// Takes a little-endian `u128` from the beginning of the parser.
+    ///
+    /// The value is converted into the system’s own byte order if necessary.
+    /// The parser is advanced by 16 octets. If there aren’t enough octets
+    /// left, leaves the parser untouched and returns an error instead.
+    pub fn parse_u128_le(&mut self) -> Result<u128, ShortInput> {
+        let mut res = [0; 16];
+        self.parse_buf(&mut res)?;
+        Ok(u128::from_le_bytes(res))
     }
 }
 
@@ -449,51 +531,205 @@ mod test {
     #[test]
     fn parse_i8() {
         let mut parser = Parser::from_static(b"\x12\xd6");
-        assert_eq!(parser.parse_i8(), Ok(0x12));
-        assert_eq!(parser.parse_i8(), Ok(-42));
+        assert_eq!(parser.parse_i8(), Ok(0x12_i8));
+        assert_eq!(parser.parse_i8(), Ok(-42_i8));
         assert!(parser.parse_i8().is_err());
     }
 
     #[test]
     fn parse_u8() {
         let mut parser = Parser::from_static(b"\x12\xd6");
-        assert_eq!(parser.parse_u8(), Ok(0x12));
-        assert_eq!(parser.parse_u8(), Ok(0xd6));
+        assert_eq!(parser.parse_u8(), Ok(0x12_u8));
+        assert_eq!(parser.parse_u8(), Ok(0xd6_u8));
         assert!(parser.parse_u8().is_err());
     }
 
     #[test]
-    fn parse_i16() {
+    fn parse_i16_be() {
         let mut parser = Parser::from_static(b"\x12\x34\xef\x6e\0");
-        assert_eq!(parser.parse_i16(), Ok(0x1234));
-        assert_eq!(parser.parse_i16(), Ok(-4242));
-        assert!(parser.parse_i16().is_err());
+        assert_eq!(parser.parse_i16_be(), Ok(0x1234_i16));
+        assert_eq!(parser.parse_i16_be(), Ok(-4242_i16));
+        assert!(parser.parse_i16_be().is_err());
     }
 
     #[test]
-    fn parse_u16() {
-        let mut parser = Parser::from_static(b"\x12\x34\xef\x6e\0");
-        assert_eq!(parser.parse_u16(), Ok(0x1234));
-        assert_eq!(parser.parse_u16(), Ok(0xef6e));
-        assert!(parser.parse_u16().is_err());
+    fn parse_i16_le() {
+        let mut parser = Parser::from_static(b"\x34\x12\x6e\xef\0");
+        assert_eq!(parser.parse_i16_le(), Ok(0x1234_i16));
+        assert_eq!(parser.parse_i16_le(), Ok(-4242_i16));
+        assert!(parser.parse_i16_le().is_err());
     }
 
     #[test]
-    fn parse_i32() {
+    fn parse_u16_be() {
+        let mut parser = Parser::from_static(b"\x12\x34\xef\x6e\0");
+        assert_eq!(parser.parse_u16_be(), Ok(0x1234_u16));
+        assert_eq!(parser.parse_u16_be(), Ok(0xef6e_u16));
+        assert!(parser.parse_u16_be().is_err());
+    }
+
+    #[test]
+    fn parse_u16_le() {
+        let mut parser = Parser::from_static(b"\x34\x12\x6e\xef\0");
+        assert_eq!(parser.parse_u16_le(), Ok(0x1234_u16));
+        assert_eq!(parser.parse_u16_le(), Ok(0xef6e_u16));
+        assert!(parser.parse_u16_le().is_err());
+    }
+
+    #[test]
+    fn parse_i32_be() {
         let mut parser =
             Parser::from_static(b"\x12\x34\x56\x78\xfd\x78\xa8\x4e\0\0\0");
-        assert_eq!(parser.parse_i32(), Ok(0x12345678));
-        assert_eq!(parser.parse_i32(), Ok(-42424242));
-        assert!(parser.parse_i32().is_err());
+        assert_eq!(parser.parse_i32_be(), Ok(0x12345678_i32));
+        assert_eq!(parser.parse_i32_be(), Ok(-42424242_i32));
+        assert!(parser.parse_i32_be().is_err());
     }
 
     #[test]
-    fn parse_u32() {
+    fn parse_i32_le() {
+        let mut parser =
+            Parser::from_static(b"\x78\x56\x34\x12\x4e\xa8\x78\xfd\0\0\0");
+        assert_eq!(parser.parse_i32_le(), Ok(0x12345678_i32));
+        assert_eq!(parser.parse_i32_le(), Ok(-42424242_i32));
+        assert!(parser.parse_i32_le().is_err());
+    }
+
+    #[test]
+    fn parse_u32_be() {
         let mut parser =
             Parser::from_static(b"\x12\x34\x56\x78\xfd\x78\xa8\x4e\0\0\0");
-        assert_eq!(parser.parse_u32(), Ok(0x12345678));
-        assert_eq!(parser.parse_u32(), Ok(0xfd78a84e));
-        assert!(parser.parse_u32().is_err());
+        assert_eq!(parser.parse_u32_be(), Ok(0x12345678_u32));
+        assert_eq!(parser.parse_u32_be(), Ok(0xfd78a84e_u32));
+        assert!(parser.parse_u32_be().is_err());
+    }
+
+    #[test]
+    fn parse_u32_le() {
+        let mut parser =
+            Parser::from_static(b"\x78\x56\x34\x12\x4e\xa8\x78\xfd\0\0\0");
+        assert_eq!(parser.parse_u32_le(), Ok(0x12345678_u32));
+        assert_eq!(parser.parse_u32_le(), Ok(0xfd78a84e_u32));
+        assert!(parser.parse_u32_le().is_err());
+    }
+
+    #[test]
+    fn parse_i64_be() {
+        let mut parser = Parser::from_static(
+            b"\x12\x34\x56\x78\xfd\x78\xa8\x4e\
+              \xce\x7a\xba\x26\xdd\x0f\x29\x99\
+              \0\0\0"
+        );
+        assert_eq!(parser.parse_i64_be(), Ok(0x12345678fd78a84e_i64));
+        assert_eq!(parser.parse_i64_be(), Ok(-3568335078657414759_i64));
+        assert!(parser.parse_i64_be().is_err());
+    }
+
+    #[test]
+    fn parse_i64_le() {
+        let mut parser = Parser::from_static(
+            b"\x4e\xa8\x78\xfd\x78\x56\x34\x12\
+              \x99\x29\x0f\xdd\x26\xba\x7a\xce\
+              \0\0\0"
+        );
+        assert_eq!(parser.parse_i64_le(), Ok(0x12345678fd78a84e_i64));
+        assert_eq!(parser.parse_i64_le(), Ok(-3568335078657414759_i64));
+        assert!(parser.parse_i64_le().is_err());
+    }
+
+    #[test]
+    fn parse_u64_be() {
+        let mut parser = Parser::from_static(
+            b"\x12\x34\x56\x78\xfd\x78\xa8\x4e\
+              \xce\x7a\xba\x26\xdd\x0f\x29\x99\
+              \0\0\0"
+        );
+        assert_eq!(parser.parse_u64_be(), Ok(0x12345678fd78a84e_u64));
+        assert_eq!(parser.parse_u64_be(), Ok(0xce7aba26dd0f2999_u64));
+        assert!(parser.parse_u64_be().is_err());
+    }
+
+    #[test]
+    fn parse_u64_le() {
+        let mut parser = Parser::from_static(
+            b"\x4e\xa8\x78\xfd\x78\x56\x34\x12\
+              \x99\x29\x0f\xdd\x26\xba\x7a\xce\
+              \0\0\0"
+        );
+        assert_eq!(parser.parse_u64_le(), Ok(0x12345678fd78a84e_u64));
+        assert_eq!(parser.parse_u64_le(), Ok(0xce7aba26dd0f2999_u64));
+        assert!(parser.parse_u64_le().is_err());
+    }
+
+    #[test]
+    fn parse_i128_be() {
+        let mut parser = Parser::from_static(
+            b"\x12\x34\x56\x78\xfd\x78\xa8\x4e\
+              \xce\x7a\xba\x26\xdd\x0f\x29\x99\
+              \xf8\xc6\x0e\x5d\x3f\x5e\x3a\x74\
+              \x38\x38\x8f\x3f\x57\xa7\x94\xa0\
+              \0\0\0\0\0"
+        );
+        assert_eq!(parser.parse_i128_be(),
+            Ok(0x12345678fd78a84ece7aba26dd0f2999_i128)
+        );
+        assert_eq!(parser.parse_i128_be(),
+            Ok(-9605457846724395475894107919101750112_i128)
+        );
+        assert!(parser.parse_i128_be().is_err());
+    }
+
+    #[test]
+    fn parse_i128_le() {
+        let mut parser = Parser::from_static(
+            b"\x99\x29\x0f\xdd\x26\xba\x7a\xce\
+              \x4e\xa8\x78\xfd\x78\x56\x34\x12\
+              \xa0\x94\xa7\x57\x3f\x8f\x38\x38\
+              \x74\x3a\x5e\x3f\x5d\x0e\xc6\xf8\
+              \0\0\0\0\0"
+        );
+        assert_eq!(parser.parse_i128_le(),
+            Ok(0x12345678fd78a84ece7aba26dd0f2999_i128)
+        );
+        assert_eq!(parser.parse_i128_le(),
+            Ok(-9605457846724395475894107919101750112_i128)
+        );
+        assert!(parser.parse_i128_le().is_err());
+    }
+
+    #[test]
+    fn parse_u128_be() {
+        let mut parser = Parser::from_static(
+            b"\x12\x34\x56\x78\xfd\x78\xa8\x4e\
+              \xce\x7a\xba\x26\xdd\x0f\x29\x99\
+              \xf8\xc6\x0e\x5d\x3f\x5e\x3a\x74\
+              \x38\x38\x8f\x3f\x57\xa7\x94\xa0\
+              \0\0\0\0\0"
+        );
+        assert_eq!(parser.parse_u128_be(),
+            Ok(0x12345678fd78a84ece7aba26dd0f2999_u128)
+        );
+        assert_eq!(parser.parse_u128_be(),
+            Ok(0xf8c60e5d3f5e3a7438388f3f57a794a0_u128)
+        );
+        assert!(parser.parse_u128_be().is_err());
+    }
+
+    #[test]
+    fn parse_u128_le() {
+        let mut parser = Parser::from_static(
+            b"\x99\x29\x0f\xdd\x26\xba\x7a\xce\
+              \x4e\xa8\x78\xfd\x78\x56\x34\x12\
+              \xa0\x94\xa7\x57\x3f\x8f\x38\x38\
+              \x74\x3a\x5e\x3f\x5d\x0e\xc6\xf8\
+              \0\0\0\0\0"
+        );
+        assert_eq!(parser.parse_u128_le(),
+            Ok(0x12345678fd78a84ece7aba26dd0f2999_u128)
+        );
+        assert_eq!(parser.parse_u128_le(),
+            Ok(0xf8c60e5d3f5e3a7438388f3f57a794a0_u128)
+        );
+        assert!(parser.parse_u128_le().is_err());
     }
 }
 

@@ -16,6 +16,9 @@ Breaking Changes
   * broke up `traits` into `octets` and `builder`,
   * renamed `types` to `array`, and
   * moved `SmallOctets` to `octets`. ([#18])
+* The integer parsing methods on `Parser` have been renamed to make it
+  clear they parse big-endian integers and new methods for parsing
+  little-endian integers have been added. ([#35])
 * The optional traits `SerializeOctets` and `DeserializeOctets` have been
   redesigned for greater flexibility. ([#21])
 
@@ -51,6 +54,7 @@ Other Changes
 [#31]: https://github.com/NLnetLabs/octseq/pull/31
 [#32]: https://github.com/NLnetLabs/octseq/pull/32
 [#33]: https://github.com/NLnetLabs/octseq/pull/33
+[#35]: https://github.com/NLnetLabs/octseq/pull/35
 
 
 ## 0.1.0

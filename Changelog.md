@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased future version
+## 0.2.0
+
+Released 2023-05-12.
 
 Breaking Changes
 
@@ -35,10 +37,6 @@ New
   respectively. ([#30])
 * Added conversions from `&str` and `&[u8]` to `Str<[u8]>`. ([#31])
 * Added `Array::resize_raw`. ([#32], [#33])
-
-Bug Fixes
-
-Other Changes
 
 [#10]: https://github.com/NLnetLabs/octseq/pull/10
 [#11]: https://github.com/NLnetLabs/octseq/pull/11

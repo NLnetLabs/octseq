@@ -517,7 +517,7 @@ pub fn infallible<T, E: Into<Infallible>>(src: Result<T, E>) -> T {
     }
 }
 
-/// Erases an error for a closure returninb an infallible results.
+/// Erases an error for a closure returning an infallible results.
 ///
 /// This function can be used for a sequence of operations on an infallible
 /// octets builder. By wrapping these operations in a closure, you can still

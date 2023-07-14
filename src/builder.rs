@@ -455,6 +455,16 @@ impl<const N: usize> FromBuilder for heapless::Vec<u8, N> {
 }
 
 
+//------------ BuilderAppendError --------------------------------------------
+
+/// A type alias resolving into the `AppendError` of an octets type’s builder.
+///
+/// This alias can be used rather than spelling out the complete litany in
+/// result types.
+pub type BuilderAppendError<Octets>
+    = <<Octets as FromBuilder>::Builder as OctetsBuilder>::AppendError;
+
+
 //============ Error Handling ================================================
 
 //------------ ShortBuf ------------------------------------------------------

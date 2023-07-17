@@ -6,9 +6,14 @@ Breaking changes
 
 New
 
+* Adds a `BuilderAppendError<_>` type alias that simplifies trait bounds
+  for complex `FromBuilder` trait bounds. ([#38])
+
 Bug fixes
 
 Other changes
+
+[#38]: https://github.com/NLnetLabs/octseq/pull/38
 
 
 ## 0.2.0

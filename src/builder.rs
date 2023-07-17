@@ -455,6 +455,16 @@ impl<const N: usize> FromBuilder for heapless::Vec<u8, N> {
 }
 
 
+//------------ BuilderAppendError --------------------------------------------
+
+/// A type alias resolving into the `AppendError` of an octets type’s builder.
+///
+/// This alias can be used rather than spelling out the complete litany in
+/// result types.
+pub type BuilderAppendError<Octets>
+    = <<Octets as FromBuilder>::Builder as OctetsBuilder>::AppendError;
+
+
 //============ Error Handling ================================================
 
 //------------ ShortBuf ------------------------------------------------------
@@ -507,7 +517,7 @@ pub fn infallible<T, E: Into<Infallible>>(src: Result<T, E>) -> T {
     }
 }
 
-/// Erases an error for a closure returninb an infallible results.
+/// Erases an error for a closure returning an infallible results.
 ///
 /// This function can be used for a sequence of operations on an infallible
 /// octets builder. By wrapping these operations in a closure, you can still

@@ -42,10 +42,14 @@
 #[macro_use]
 extern crate std;
 
-pub use self::array::*;
-pub use self::builder::*;
-pub use self::octets::*;
-pub use self::parse::*;
+pub use self::array::Array;
+pub use self::builder::{
+    EmptyBuilder, FreezeBuilder, FromBuilder, IntoBuilder, OctetsBuilder,
+    ShortBuf, Truncate,
+};
+pub use self::octets::{Octets, OctetsFrom, OctetsInto};
+pub use self::parse::{Parser, ShortInput};
+pub use self::str::{Str, StrBuilder};
 
 pub mod array;
 pub mod builder;

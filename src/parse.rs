@@ -108,7 +108,7 @@ impl<'a, Octs: AsRef<[u8]> + ?Sized> Parser<'a, Octs> {
 
     /// Returns a slice of the data left to parse.
     pub fn peek_all(&self) -> &[u8] {
-        &self.octets.as_ref()[self.pos..]
+        &self.octets.as_ref()[self.pos..self.len]
     }
 
     /// Repositions the parser to the given index.
@@ -488,6 +488,13 @@ mod test {
         assert_eq!(parser.peek_all(), b"0123456789");
         parser.advance(2).unwrap();
         assert_eq!(parser.peek_all(), b"23456789");
+
+        let mut pp = parser.parse_parser(4).unwrap();
+        assert_eq!(pp.peek_all(), b"2345");
+        pp.advance(2).unwrap();
+        assert_eq!(pp.peek_all(), b"45");
+
+        assert_eq!(parser.peek_all(), b"6789");
     }
 
     #[test]

@@ -11,9 +11,13 @@ New
 
 Bug fixes
 
+* Fix `Parser::peek_all` to only return data up until the parser's
+  length rather than all data. ([#40])
+
 Other changes
 
 [#38]: https://github.com/NLnetLabs/octseq/pull/38
+[#40]: https://github.com/NLnetLabs/octseq/pull/40
 
 
 ## 0.2.0

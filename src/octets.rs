@@ -42,7 +42,7 @@ pub trait Octets: AsRef<[u8]> {
 }
 
 impl<'t, T: Octets + ?Sized> Octets for &'t T {
-    type Range<'a> = <T as Octets>::Range<'a> where Self: 'a;
+    type Range<'a> = <T as Octets>::Range<'t> where Self: 'a;
 
     fn range(&self, range: impl RangeBounds<usize>) -> Self::Range<'_> {
         (*self).range(range)

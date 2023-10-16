@@ -4,6 +4,9 @@
 
 Breaking changes
 
+* Change the lifetime of the range for a reference to the lifetime of the
+  reference. ([#41] by [@xofyarg])
+
 New
 
 * Adds a `BuilderAppendError<_>` type alias that simplifies trait bounds
@@ -18,6 +21,8 @@ Other changes
 
 [#38]: https://github.com/NLnetLabs/octseq/pull/38
 [#40]: https://github.com/NLnetLabs/octseq/pull/40
+[#41]: https://github.com/NLnetLabs/octseq/pull/41
+[@xofyarg]: https://github.com/xofyarg
 
 
 ## 0.2.0

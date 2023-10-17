@@ -16,7 +16,6 @@ use crate::octets::Octets;
 /// the position beyond processed data.
 ///
 /// [octets reference]: trait.OctetsRef.html
-#[derive(Debug)]
 pub struct Parser<'a, Octs: ?Sized> {
     /// The underlying octets reference.
     octets: &'a Octs,
@@ -405,6 +404,85 @@ impl<'a, Octs: AsRef<[u8]> + ?Sized> Parser<'a, Octs> {
     }
 }
 
+//--- Debug
+
+fn hexdump(bytes: &[u8], f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    if let Some((head, tail)) = bytes.split_first() {
+        write!(f, "{:02x}", head)?;
+        for b in tail {
+            write!(f, " {:02x}", b)?;
+        }
+    }
+    Ok(())
+}
+
+impl<'a, Octs: AsRef<[u8]> + ?Sized> fmt::Debug for Parser<'a, Octs> {
+
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if f.alternate() {
+            // pretty print via #?
+            //
+            // multi-line version of the other one, perhaps showing the actual
+            // start of the octets (e.g. bytes 0..16) and tail (n-16..n)
+            // before and after the pre and post, respectively.
+            //
+            // Include line numbers a la hexdump(1) / wireshark ?
+
+            todo!()
+        } else {
+
+            const LIMIT: usize = 24;
+            const PRE: usize = 8;
+            const POST: usize = 16;
+
+            if self.len() > LIMIT {
+                let bytes = self.octets.as_ref();
+                let (pre, post) = bytes.split_at(self.pos);
+                let pre_len = pre.len();
+                let post_len = post.len();
+                let pre_truncated = &pre[pre.len().checked_sub(PRE).unwrap_or(0) .. pre_len];
+                let post_truncated = &post[..core::cmp::min(post_len, POST)];
+
+                write!(f, "[")?;
+                match pre_len {
+                    0 => { }
+                    1..=PRE => { write!(f, " ")?; hexdump(pre_truncated, f)?; write!(f, " ")?; }
+                    _ => {
+                        write!(f, " 0..{}, ", pre_len - PRE)?;
+                        hexdump(pre_truncated, f)?;
+                        write!(f, " ")?;
+                    }
+                }
+
+                write!(f, ">")?;
+                match post_len {
+                    0 => { },
+                    1..=POST => { hexdump(post_truncated, f)? }
+                    _ => {
+                        hexdump(post_truncated, f)?;
+                        write!(f, ", {}..{} ", self.pos() + POST + 1, bytes.len() - 1)?;
+                    }
+                }
+                write!(f, "] ")?;
+
+            } else {
+                let (pre, post) = self.octets.as_ref().split_at(self.pos);
+                if pre.is_empty() {
+                    write!(f, "[>")?;
+                } else {
+                    write!(f, "[ ")?;
+                    hexdump(pre, f)?;
+                    write!(f, " >")?;
+                }
+                hexdump(post, f)?;
+                write!(f, "]")?;
+            }
+
+        }
+        Ok(())
+    }
+
+}
 
 //--- Clone and Copy
 
@@ -737,6 +815,20 @@ mod test {
             Ok(0xf8c60e5d3f5e3a7438388f3f57a794a0_u128)
         );
         assert!(parser.parse_u128_le().is_err());
+    }
+
+    #[test]
+    fn parser_debug() {
+        for n in [0, 4, 8, 16, 24, 25, 32, 40] {
+            eprintln!("\n-- len {n}");
+            let raw: std::vec::Vec<u8> = (0x01..n+1).collect();
+            let mut parser = Parser::from_ref(&raw);
+            eprintln!("{:?}", parser);
+            for _ in 0..n {
+                parser.advance(1).unwrap();
+                eprintln!("{:?}", parser);
+            }
+        }
     }
 }
 

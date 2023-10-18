@@ -1,5 +1,16 @@
 # Changelog
 
+## Unrelease next version
+
+Breaking changes
+
+New
+
+Bug fixes
+
+Other changes
+
+
 ## 0.3.0
 
 Release 2023-10-18.

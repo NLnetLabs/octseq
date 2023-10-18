@@ -1,6 +1,8 @@
 # Changelog
 
-## Next unreleased version
+## 0.3.0
+
+Release 2023-10-18.
 
 Breaking changes
 
@@ -18,8 +20,6 @@ Bug fixes
 
 * Fix `Parser::peek_all` to only return data up until the parser's
   length rather than all data. ([#40])
-
-Other changes
 
 [#38]: https://github.com/NLnetLabs/octseq/pull/38
 [#39]: https://github.com/NLnetLabs/octseq/pull/39

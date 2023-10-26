@@ -5,6 +5,7 @@
 //! ref and allows to parse values from the octets.
 
 use core::fmt;
+use core::ops::Range;
 use crate::octets::Octets;
 
 //------------ Parser --------------------------------------------------------
@@ -47,25 +48,28 @@ impl<'a, Octs: ?Sized> Parser<'a, Octs> {
 
     /// Creates a new parser atop a range of the referenced octet sequence.
     ///
-    /// If the end of the specified range lies beyond the end of the
-    /// octets, returns an error.
-    pub fn from_ref_with_range(
-        octets: &'a Octs,
-        range: core::ops::Range<usize>
-    ) -> Result<Self, ShortInput>
+    /// # Panics
+    ///
+    /// Panics if `range` is decreasing or out of bounds.
+    pub fn with_range(octets: &'a Octs, range: Range<usize>) -> Self
     where
         Octs: AsRef<[u8]>
     {
+        if range.end < range.start  {
+            panic!(
+                "range starts at {} but ends at {}",
+                range.start, range.end
+            );
+        }
+        
         if range.end > octets.as_ref().len() {
-            Err(ShortInput(()))
-        } else {
-            Ok(
-                Parser {
-                    pos: range.start,
-                    len: range.end,
-                    octets
-                }
-            )
+            panic!("range end is out of range for octets");
+        }
+
+        Parser {
+            pos: range.start,
+            len: range.end,
+            octets
         }
     }
 

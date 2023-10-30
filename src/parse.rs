@@ -5,7 +5,7 @@
 //! ref and allows to parse values from the octets.
 
 use core::fmt;
-use core::ops::Range;
+use core::ops::{Bound, RangeBounds};
 use crate::octets::Octets;
 
 //------------ Parser --------------------------------------------------------
@@ -51,24 +51,51 @@ impl<'a, Octs: ?Sized> Parser<'a, Octs> {
     /// # Panics
     ///
     /// Panics if `range` is decreasing or out of bounds.
-    pub fn with_range(octets: &'a Octs, range: Range<usize>) -> Self
+    pub fn with_range<R>(octets: &'a Octs, range: R) -> Self
     where
-        Octs: AsRef<[u8]>
+        Octs: AsRef<[u8]>,
+        R: RangeBounds<usize>
     {
-        if range.end < range.start  {
+        let octets_len = octets.as_ref().len();
+
+        let pos = match range.start_bound() {
+            Bound::Unbounded => 0,
+            Bound::Included(n) => {
+                if *n > octets_len - 1 {
+                    panic!("range start is out of range for octets")
+                }
+                *n
+            }
+            Bound::Excluded(_) => unreachable!() // not a thing for the
+                                                 // start_bound, right?
+        };
+
+        let len = match range.end_bound() {
+            Bound::Unbounded => octets_len,
+            Bound::Excluded(n) => {
+                if *n > octets_len {
+                    panic!("range end is out of range for octets")
+                }
+                *n
+            }
+            Bound::Included(n) => {
+                if *n > octets_len - 1 {
+                    panic!("range end is out of range for octets")
+                }
+                n + 1
+            }
+        };
+
+        if len < pos {
             panic!(
                 "range starts at {} but ends at {}",
-                range.start, range.end
-            );
-        }
-        
-        if range.end > octets.as_ref().len() {
-            panic!("range end is out of range for octets");
+                pos, len
+            )
         }
 
         Parser {
-            pos: range.start,
-            len: range.end,
+            pos,
+            len,
             octets
         }
     }

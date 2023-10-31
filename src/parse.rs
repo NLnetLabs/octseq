@@ -60,8 +60,9 @@ impl<'a, Octs: ?Sized> Parser<'a, Octs> {
 
         let pos = match range.start_bound() {
             Bound::Unbounded => 0,
+            Bound::Included(0) => 0,
             Bound::Included(n) => {
-                if *n > octets_len - 1 {
+                if octets_len == 0 || *n > octets_len - 1 {
                     panic!("range start is out of range for octets")
                 }
                 *n

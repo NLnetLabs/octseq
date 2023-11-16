@@ -5,6 +5,7 @@
 //! ref and allows to parse values from the octets.
 
 use core::fmt;
+use core::ops::{Bound, RangeBounds};
 use crate::octets::Octets;
 
 //------------ Parser --------------------------------------------------------
@@ -44,6 +45,83 @@ impl<'a, Octs: ?Sized> Parser<'a, Octs> {
             octets,
         }
     }
+
+    /// Creates a new parser only using a range of the given octets.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `range` is decreasing or out of bounds.
+    pub fn with_range<R>(octets: &'a Octs, range: R) -> Self
+    where
+        Octs: AsRef<[u8]>,
+        R: RangeBounds<usize>
+    {
+        match Self::_try_with_range(octets, range) {
+            Ok(p) => p,
+            Err(e) => panic!("{}", e)
+        }
+    }
+
+    /// Creates a new parser only using a range if possible.
+    ///
+    /// If `range` is decreasing or out of bounds, returns an Error.
+    pub fn try_with_range<R>(
+        octets: &'a Octs, range: R
+    ) -> Option<Self>
+    where
+        Octs: AsRef<[u8]>,
+        R: RangeBounds<usize>
+    {
+        Self::_try_with_range(octets, range).ok()
+    }
+
+    /// Creates a new parser only using a range if possible.
+    ///
+    /// If `range` is decreasing or out of bounds, returns an Error.
+    fn _try_with_range<R>(
+        octets: &'a Octs, range: R
+    ) -> Result<Self, &'static str>
+    where
+        Octs: AsRef<[u8]>,
+        R: RangeBounds<usize>
+    {
+        let octets_len = octets.as_ref().len();
+
+        let pos = match range.start_bound() {
+            Bound::Unbounded => 0,
+            Bound::Included(n) => *n,
+            Bound::Excluded(n) => *n + 1,
+        };
+
+        if pos > octets_len {
+            return Err("range start is out of range for octets")
+        }
+
+        let len = match range.end_bound() {
+            Bound::Unbounded => octets_len,
+            Bound::Excluded(n) => *n,
+            Bound::Included(n) => *n + 1,
+        };
+
+        if len > octets_len {
+            return Err("range end is out of range for octets")
+        }
+
+        if len < pos {
+            return Err("range starts after end")
+        }
+
+        Ok(
+            Parser {
+                pos,
+                len,
+                octets
+            }
+        )
+
+    }
+
+
 
     /// Returns the wrapped reference to the underlying octets sequence.
     pub fn octets_ref(&self) -> &'a Octs {
@@ -738,5 +816,35 @@ mod test {
         );
         assert!(parser.parse_u128_le().is_err());
     }
-}
 
+    #[test]
+    fn with_range() {
+        let range = [0, 1, 2, 3, 4, 5_usize];
+        let slice = &[1, 2, 3];
+
+        for start in range {
+            for end in range {
+                for start in [
+                    Bound::Unbounded,
+                    Bound::Included(start),
+                    Bound::Excluded(start)
+                ] {
+                    for end in [
+                        Bound::Unbounded,
+                        Bound::Included(end),
+                        Bound::Excluded(end)
+                    ] {
+                        let bounds = (start, end);
+                        assert_eq!(
+                            slice.get(bounds),
+                            Parser::try_with_range(
+                                slice, bounds
+                            ).as_ref().map(|p| p.peek_all()),
+                            "{:?}", bounds
+                        );
+                    }
+                }
+            }
+        }
+    }
+}

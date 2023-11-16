@@ -813,7 +813,6 @@ mod test {
         check(&[1,2,3], ..2,  &[1,2]);
         check(&[1,2,3], ..=2, &[1,2,3]);
         check(&[1,2,3], (Bound::Excluded(0), Bound::Included(2)), &[2,3]);
-
     }
 
     #[test]
@@ -832,6 +831,15 @@ mod test {
     #[should_panic = "range starts at 2 but ends at 1"]
     fn with_range_invalid_range() {
         Parser::with_range(&[1,2,3], 2..1);
+    }
+
+    #[test]
+    #[should_panic = "range start is out of range for octets"]
+    fn with_range_invalid_exclusive_start_range() {
+        Parser::with_range(
+            &[1,2,3],
+            (Bound::Excluded(2), Bound::Excluded(5))
+        );
     }
 }
 

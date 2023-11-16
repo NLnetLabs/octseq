@@ -46,12 +46,41 @@ impl<'a, Octs: ?Sized> Parser<'a, Octs> {
         }
     }
 
-    /// Creates a new parser atop a range of the referenced octet sequence.
+    /// Creates a new parser only using a range of the given octets.
     ///
     /// # Panics
     ///
     /// Panics if `range` is decreasing or out of bounds.
     pub fn with_range<R>(octets: &'a Octs, range: R) -> Self
+    where
+        Octs: AsRef<[u8]>,
+        R: RangeBounds<usize>
+    {
+        match Self::_try_with_range(octets, range) {
+            Ok(p) => p,
+            Err(e) => panic!("{}", e)
+        }
+    }
+
+    /// Creates a new parser only using a range if possible.
+    ///
+    /// If `range` is decreasing or out of bounds, returns an Error.
+    pub fn try_with_range<R>(
+        octets: &'a Octs, range: R
+    ) -> Option<Self>
+    where
+        Octs: AsRef<[u8]>,
+        R: RangeBounds<usize>
+    {
+        Self::_try_with_range(octets, range).ok()
+    }
+
+    /// Creates a new parser only using a range if possible.
+    ///
+    /// If `range` is decreasing or out of bounds, returns an Error.
+    fn _try_with_range<R>(
+        octets: &'a Octs, range: R
+    ) -> Result<Self, &'static str>
     where
         Octs: AsRef<[u8]>,
         R: RangeBounds<usize>

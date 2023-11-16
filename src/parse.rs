@@ -813,6 +813,7 @@ mod test {
         check(&[1,2,3], ..2,  &[1,2]);
         check(&[1,2,3], ..=2, &[1,2,3]);
         check(&[1,2,3], (Bound::Excluded(0), Bound::Included(2)), &[2,3]);
+        check(&[1,2,3], (Bound::Excluded(1), Bound::Included(2)), &[3]);
     }
 
     #[test]

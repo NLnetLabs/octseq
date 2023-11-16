@@ -60,49 +60,39 @@ impl<'a, Octs: ?Sized> Parser<'a, Octs> {
 
         let pos = match range.start_bound() {
             Bound::Unbounded => 0,
-            Bound::Included(n) => {
-                if  *n + 1 > octets_len  {
-                    panic!("range start is out of range for octets")
-                }
-                *n
-            }
-            Bound::Excluded(n) => {
-                if  *n + 2 > octets_len  {
-                    panic!("range start is out of range for octets")
-                }
-                *n + 1
-            }
+            Bound::Included(n) => *n,
+            Bound::Excluded(n) => *n + 1,
         };
+
+        if pos > octets_len {
+            return Err("range start is out of range for octets")
+        }
 
         let len = match range.end_bound() {
             Bound::Unbounded => octets_len,
-            Bound::Excluded(n) => {
-                if *n > octets_len {
-                    panic!("range end is out of range for octets")
-                }
-                *n
-            }
-            Bound::Included(n) => {
-                if *n > octets_len - 1 {
-                    panic!("range end is out of range for octets")
-                }
-                n + 1
-            }
+            Bound::Excluded(n) => *n,
+            Bound::Included(n) => *n + 1,
         };
 
-        if len < pos {
-            panic!(
-                "range starts at {} but ends at {}",
-                pos, len
-            )
+        if len > octets_len {
+            return Err("range end is out of range for octets")
         }
 
-        Parser {
-            pos,
-            len,
-            octets
+        if len < pos {
+            return Err("range starts after end")
         }
+
+        Ok(
+            Parser {
+                pos,
+                len,
+                octets
+            }
+        )
+
     }
+
+
 
     /// Returns the wrapped reference to the underlying octets sequence.
     pub fn octets_ref(&self) -> &'a Octs {
@@ -800,47 +790,32 @@ mod test {
 
     #[test]
     fn with_range() {
-        fn check<R>(octets: &[u8], range: R, expect: &[u8])
-            where R: RangeBounds<usize>
-        {
-            let parser = Parser::with_range(octets, range);
-            assert_eq!(parser.peek_all(), expect);
+        let range = [0, 1, 2, 3, 4, 5_usize];
+        let slice = &[1, 2, 3];
+
+        for start in range {
+            for end in range {
+                for start in [
+                    Bound::Unbounded,
+                    Bound::Included(start),
+                    Bound::Excluded(start)
+                ] {
+                    for end in [
+                        Bound::Unbounded,
+                        Bound::Included(end),
+                        Bound::Excluded(end)
+                    ] {
+                        let bounds = (start, end);
+                        assert_eq!(
+                            slice.get(bounds),
+                            Parser::try_with_range(
+                                slice, bounds
+                            ).as_ref().map(|p| p.peek_all()),
+                            "{:?}", bounds
+                        );
+                    }
+                }
+            }
         }
-
-        check(&[1,2,3], .. ,  &[1,2,3]);
-        check(&[1,2,3], 1..3, &[2,3]);
-        check(&[1,2,3], 1..,  &[2,3]);
-        check(&[1,2,3], ..2,  &[1,2]);
-        check(&[1,2,3], ..=2, &[1,2,3]);
-        check(&[1,2,3], (Bound::Excluded(0), Bound::Included(2)), &[2,3]);
-        check(&[1,2,3], (Bound::Excluded(1), Bound::Included(2)), &[3]);
-    }
-
-    #[test]
-    #[should_panic = "range start is out of range for octets"]
-    fn with_range_invalid_start() {
-        Parser::with_range(&[1,2,3], 3..);
-    }
-
-    #[test]
-    #[should_panic = "range end is out of range for octets"]
-    fn with_range_invalid_end() {
-        Parser::with_range(&[1,2,3], ..5);
-    }
-
-    #[test]
-    #[should_panic = "range starts at 2 but ends at 1"]
-    fn with_range_invalid_range() {
-        Parser::with_range(&[1,2,3], 2..1);
-    }
-
-    #[test]
-    #[should_panic = "range start is out of range for octets"]
-    fn with_range_invalid_exclusive_start_range() {
-        Parser::with_range(
-            &[1,2,3],
-            (Bound::Excluded(2), Bound::Excluded(5))
-        );
     }
 }
-

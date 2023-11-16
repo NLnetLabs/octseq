@@ -1,18 +1,14 @@
 # Changelog
 
-## Unrelease next version
+## 0.3.1
 
-Breaking changes
+Release 2023-11-16.
 
 New
 
 * Added `Parser::with_range` and `Parser::try_with_range` that allow
   creating a parser positioned and length-limited according to a given
   range. ([#43])
-
-Bug fixes
-
-Other changes
 
 [#43]: https://github.com/NLnetLabs/octseq/pull/43
 

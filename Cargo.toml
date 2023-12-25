@@ -19,7 +19,7 @@ smallvec = { version = "1", optional = true }
 
 [features]
 default = ["std"]
-std     = ["bytes/std"]
+std     = ["bytes?/std"]
 
 [package.metadata.docs.rs]
 all-features = true

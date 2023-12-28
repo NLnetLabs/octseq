@@ -8,7 +8,13 @@ New
 
 Bug fixes
 
+* Don’t enable _bytes’_ `std` feature by default. ([#45] by
+  [@reitermarkus])
+
 Other changes
+
+[#45]: https://github.com/NLnetLabs/octseq/pull/45
+[@reitermarkus]: https://github.com/reitermarkus
 
 
 ## 0.3.1

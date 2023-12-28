@@ -1,6 +1,6 @@
 [package]
 name = "octseq"
-version = "0.3.2"
+version = "0.3.3-dev"
 edition = "2021"
 rust-version = "1.65"
 authors = ["NLnet Labs <rust-team@nlnetlabs.nl>"]

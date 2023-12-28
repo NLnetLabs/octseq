@@ -32,15 +32,10 @@
 //!   feature, provides traits and functions to more efficiently serialize
 //!   octets sequences.
 
-#![no_std]
+#![cfg_attr(not(feature = "std"), no_std)]
 #![allow(renamed_and_removed_lints)]
 #![allow(clippy::unknown_clippy_lints)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
-
-#[cfg(any(feature = "std"))]
-#[allow(unused_imports)] // Import macros even if unused.
-#[macro_use]
-extern crate std;
 
 pub use self::array::Array;
 pub use self::builder::{

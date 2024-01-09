@@ -10,6 +10,12 @@ Bug fixes
 
 Other changes
 
+* Update _heapless_ dependency to 0.8. ([#47] by
+  [@reitermarkus])
+
+[#47]: https://github.com/NLnetLabs/octseq/pull/45
+[@reitermarkus]: https://github.com/reitermarkus
+
 
 ## 0.3.2
 

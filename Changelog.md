@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased next version
+
+Breaking changes
+
+New
+
+Bug Fixes
+
+Other changes
+
+
 ## 0.4.0
 
 Released 2024-01-09

@@ -1,17 +1,13 @@
 # Changelog
 
-## Unreleased next version
+## 0.4.0
+
+Released 2024-01-09
 
 Breaking changes
 
 * Update _heapless_ dependency to 0.8. ([#47] by
   [@reitermarkus])
-
-New
-
-Bug fixes
-
-Other changes
 
 [#47]: https://github.com/NLnetLabs/octseq/pull/45
 [@reitermarkus]: https://github.com/reitermarkus

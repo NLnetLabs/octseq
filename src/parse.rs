@@ -488,11 +488,7 @@ impl<'a, Octs: AsRef<[u8]> + ?Sized> Parser<'a, Octs> {
 
 impl<'a, Octs: ?Sized> Clone for Parser<'a, Octs> {
     fn clone(&self) -> Self {
-        Parser {
-            octets: self.octets,
-            pos: self.pos,
-            len: self.len
-        }
+        *self
     }
 }
 

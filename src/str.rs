@@ -190,12 +190,6 @@ impl<Octets: AsRef<[u8]> + ?Sized> borrow::Borrow<str> for Str<Octets>{
     }
 }
 
-impl<Octets: AsRef<[u8]> + ?Sized> borrow::Borrow<[u8]> for Str<Octets>{
-    fn borrow(&self) -> &[u8] {
-        self.as_slice()
-    }
-}
-
 impl<Octets> borrow::BorrowMut<str> for Str<Octets> 
 where Octets: AsRef<[u8]> +  AsMut<[u8]> + ?Sized {
     fn borrow_mut(&mut self) -> &mut str {
@@ -447,7 +441,7 @@ impl<Octets> StrBuilder<Octets> {
     /// Returns `None` if the builder is empty.
     pub fn pop(&mut self) -> Option<char>
     where Octets: AsRef<[u8]> + Truncate {
-        let ch = self.as_str().chars().rev().next()?;
+        let ch = self.as_str().chars().next_back()?;
         self.truncate(self.len() - ch.len_utf8());
         Some(ch)
     }
@@ -500,12 +494,6 @@ impl<Octets: AsMut<[u8]>> AsMut<str> for StrBuilder<Octets> {
 impl<Octets: AsRef<[u8]>> borrow::Borrow<str> for StrBuilder<Octets>{
     fn borrow(&self) -> &str {
         self.as_str()
-    }
-}
-
-impl<Octets: AsRef<[u8]>> borrow::Borrow<[u8]> for StrBuilder<Octets>{
-    fn borrow(&self) -> &[u8] {
-        self.as_slice()
     }
 }
 

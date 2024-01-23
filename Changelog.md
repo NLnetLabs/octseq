@@ -4,11 +4,18 @@
 
 Breaking changes
 
+* Removed the impls of `Borrow<[u8]>` for `Str<_>` and `StrBuilder<_>` (
+  `Borrow<str>` is still there). ([#52])
+
 New
+
+* Added an impl of `OctetsFrom<_>` for `Smallvec<_>`. ([#52])
 
 Bug Fixes
 
 Other changes
+
+[#52]: https://github.com/NLnetLabs/octseq/pull/52
 
 
 ## 0.4.0
@@ -20,7 +27,7 @@ Breaking changes
 * Update _heapless_ dependency to 0.8. ([#47] by
   [@reitermarkus])
 
-[#47]: https://github.com/NLnetLabs/octseq/pull/45
+[#47]: https://github.com/NLnetLabs/octseq/pull/47
 [@reitermarkus]: https://github.com/reitermarkus
 
 

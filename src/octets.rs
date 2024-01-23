@@ -187,15 +187,15 @@ where
     }
 }
 
-#[cfg(features = "smallvec")]
+#[cfg(feature = "smallvec")]
 impl<Source, A> OctetsFrom<Source> for smallvec::SmallVec<A>
 where
-    Source: AsRef<u8>,
-    A: Array<Item = u8>,
+    Source: AsRef<[u8]>,
+    A: smallvec::Array<Item = u8>,
 {
     type Error = Infallible;
 
-    fn try_octets_from(source: Source) -> Result<Self, Self::Infallible> {
+    fn try_octets_from(source: Source) -> Result<Self, Self::Error> {
         Ok(smallvec::ToSmallVec::to_smallvec(source.as_ref()))
     }
 }

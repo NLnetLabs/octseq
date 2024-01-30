@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased next version
+
+Breaking changes
+
+New
+
+Bug fixes
+
+Other changes
+
+
 ## 0.5.0
 
 Released 2024-01-30.

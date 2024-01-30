@@ -10,6 +10,7 @@ use core::convert::Infallible;
 use crate::builder::{
     EmptyBuilder, FreezeBuilder, OctetsBuilder, Truncate, infallible
 };
+use crate::octets::OctetsFrom;
 
 
 //------------ Str -----------------------------------------------------------
@@ -128,6 +129,22 @@ impl<Octets: ?Sized> Str<Octets> {
     pub fn is_empty(&self) -> bool
     where Octets: AsRef<[u8]> {
         self.0.as_ref().is_empty()
+    }
+}
+
+
+//--- OctetsFrom
+
+impl<Octs, SrcOcts> OctetsFrom<Str<SrcOcts>> for Str<Octs>
+where
+    Octs: OctetsFrom<SrcOcts>
+{
+    type Error = Octs::Error;
+
+    fn try_octets_from(src: Str<SrcOcts>) -> Result<Self, Self::Error> {
+        Octs::try_octets_from(src.into_octets()).map(|octs| unsafe {
+            Self::from_utf8_unchecked(octs)
+        })
     }
 }
 

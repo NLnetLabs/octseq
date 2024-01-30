@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased next version
+## 0.5.0
+
+Released 2024-01-30.
 
 Breaking changes
 
@@ -11,10 +13,6 @@ New
 
 * Added an impl of `OctetsFrom<_>` for `Smallvec<_>`. ([#52])
 * Added an impl of `OctetsFrom<_>` for `Str<_>`. ([#51])
-
-Bug Fixes
-
-Other changes
 
 [#51]: https://github.com/NLnetLabs/octseq/pull/51
 [#52]: https://github.com/NLnetLabs/octseq/pull/52

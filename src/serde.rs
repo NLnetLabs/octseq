@@ -25,6 +25,14 @@ pub trait SerializeOctets {
     }
 }
 
+impl SerializeOctets for [u8] {
+    fn serialize_octets<S: serde::Serializer>(
+        &self, serializer: S
+    ) -> Result<S::Ok, S::Error> {
+        serializer.serialize_bytes(self)
+    }
+}
+
 impl<'a> SerializeOctets for &'a [u8] {
     fn serialize_octets<S: serde::Serializer>(
         &self, serializer: S

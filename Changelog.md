@@ -1,16 +1,12 @@
 # Changelog
 
-## Unreleased next version
+## 0.5.1
 
-Breaking changes
+Released 2024-02-13
 
 New
 
 * Added an impl of `SerialzeOctets` for plain, unsized `[u8]`. ([#54])
-
-Bug fixes
-
-Other changes
 
 [#54]: https://github.com/NLnetLabs/octseq/pull/54
 

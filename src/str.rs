@@ -8,7 +8,8 @@
 use core::{borrow, cmp, fmt, hash, ops, str};
 use core::convert::Infallible;
 use crate::builder::{
-    EmptyBuilder, FreezeBuilder, OctetsBuilder, Truncate, infallible
+    BuilderAppendError, EmptyBuilder, FreezeBuilder, FromBuilder,
+    OctetsBuilder, Truncate, infallible
 };
 use crate::octets::OctetsFrom;
 
@@ -39,6 +40,34 @@ impl<Octets> Str<Octets> {
     /// correctly encoded UTF-8 string.
     pub unsafe fn from_utf8_unchecked(octets: Octets) -> Self {
         Self(octets)
+    }
+
+    /// Creates a value by copying the content of a `str`.
+    pub fn try_copy_from_str(
+        s: &str
+    ) -> Result<Self, BuilderAppendError<Octets>>
+    where
+        Octets: FromBuilder,
+        <Octets as FromBuilder>::Builder: EmptyBuilder,
+    {
+        let mut res = <Octets as FromBuilder>::Builder::with_capacity(s.len());
+        res.append_slice(s.as_bytes())?;
+        Ok(unsafe { Self::from_utf8_unchecked(res.freeze()) })
+    }
+
+    /// Creates a value by copying the content of a `str`.
+    ///
+    /// This function is identical to
+    /// [`try_copy_from_str`][Self::try_copy_from_str] for octets types
+    /// of unlimited capacity.
+    pub fn copy_from_str(s: &str) -> Self
+    where
+        Octets: FromBuilder,
+        <Octets as FromBuilder>::Builder: EmptyBuilder,
+        <<Octets as FromBuilder>::Builder as OctetsBuilder>::AppendError:
+            Into<Infallible>,
+    {
+        infallible(Self::try_copy_from_str(s))
     }
 }
 

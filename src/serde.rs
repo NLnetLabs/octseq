@@ -12,6 +12,13 @@ use core::fmt;
 use core::marker::PhantomData;
 use serde::de::Visitor;
 
+pub fn serialize<T, S>(octs: &T, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+    T: AsRef<[u8]> + ?Sized,
+{
+    octs.as_ref().serialize_octets(serializer)
+}
 
 //------------ SerializeOctets -----------------------------------------------
 

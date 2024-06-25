@@ -12,12 +12,20 @@ use core::fmt;
 use core::marker::PhantomData;
 use serde::de::Visitor;
 
-pub fn serialize<T, S>(octs: &T, serializer: S) -> Result<S::Ok, S::Error>
+pub fn serialize<Octs, S>(octs: &Octs, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: serde::Serializer,
-    T: AsRef<[u8]> + ?Sized,
+    Octs: AsRef<[u8]> + ?Sized,
 {
     octs.as_ref().serialize_octets(serializer)
+}
+
+pub fn deserialize<'de, Octs, D>(deserializer: D) -> Result<Octs, D::Error>
+where
+    D: serde::Deserializer<'de>,
+    Octs: DeserializeOctets<'de>,
+{
+    Octs::deserialize_octets(deserializer)
 }
 
 //------------ SerializeOctets -----------------------------------------------
@@ -421,4 +429,3 @@ impl<'de, const N: usize> serde::de::Visitor<'de> for HeaplessVecVisitor<N> {
         Ok(heapless::Vec::from_iter(value.iter().copied()))
     }
 }
-

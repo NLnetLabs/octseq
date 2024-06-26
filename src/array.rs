@@ -3,8 +3,8 @@
 use core::{cmp, fmt};
 use core::ops::RangeBounds;
 use crate::builder::{
-    EmptyBuilder, FreezeBuilder, FromBuilder, IntoBuilder, OctetsBuilder,
-    ShortBuf, Truncate,
+    FreezeBuilder, FromBuilder, IntoBuilder, OctetsBuilder, ShortBuf,
+    Truncate,
 };
 use crate::octets::{Octets, OctetsFrom};
 
@@ -161,9 +161,7 @@ impl<const N: usize> OctetsBuilder for Array<N> {
         self.len = end;
         Ok(())
     }
-}
 
-impl<const N: usize> EmptyBuilder for Array<N> {
     fn empty() -> Self {
         Default::default()
     }
@@ -325,4 +323,3 @@ impl<'de, const N: usize> serde::de::Visitor<'de> for ArrayVisitor<N> {
         Array::try_from(value).map_err(E::custom)
     }
 }
-

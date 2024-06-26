@@ -39,8 +39,8 @@
 
 pub use self::array::Array;
 pub use self::builder::{
-    EmptyBuilder, FreezeBuilder, FromBuilder, IntoBuilder, OctetsBuilder,
-    ShortBuf, Truncate,
+    FreezeBuilder, FromBuilder, IntoBuilder, OctetsBuilder, ShortBuf,
+    Truncate,
 };
 pub use self::octets::{Octets, OctetsFrom, OctetsInto};
 pub use self::parse::{Parser, ShortInput};

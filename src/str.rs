@@ -8,8 +8,8 @@
 use core::{borrow, cmp, fmt, hash, ops, str};
 use core::convert::Infallible;
 use crate::builder::{
-    BuilderAppendError, EmptyBuilder, FreezeBuilder, FromBuilder,
-    OctetsBuilder, Truncate, infallible
+    infallible, BuilderAppendError, FreezeBuilder, FromBuilder,
+    OctetsBuilder, Truncate,
 };
 use crate::octets::OctetsFrom;
 
@@ -705,4 +705,3 @@ mod test {
         assert_eq!(data, "ประเทศไทย中");
     }
 }
-

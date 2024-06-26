@@ -42,7 +42,7 @@ pub trait OctetsBuilder {
     /// The error type when appending data fails.
     ///
     /// There are exactly two options for this type: Builders where appending
-    /// never fails use `Infallible`. Builders with a limited buffer which 
+    /// never fails use `Infallible`. Builders with a limited buffer which
     /// may have insufficient space for appending use [`ShortBuf`].
     ///
     /// The trait bound on the type allows upgrading the error to [`ShortBuf`]
@@ -56,19 +56,20 @@ pub trait OctetsBuilder {
     ///
     /// If there isn’t enough space available for appending the slice,
     /// returns an error and leaves the builder alone.
-    fn append_slice(
-        &mut self, slice: &[u8]
-    ) -> Result<(), Self::AppendError>;
-}
+    fn append_slice(&mut self, slice: &[u8])
+        -> Result<(), Self::AppendError>;
 
-impl<'a, T: OctetsBuilder> OctetsBuilder for &'a mut T {
-    type AppendError = T::AppendError;
+    /// Creates a new empty octets builder with a default size.
+    fn empty() -> Self;
 
-    fn append_slice(
-        &mut self, slice: &[u8]
-    ) -> Result<(), Self::AppendError> {
-        (*self).append_slice(slice)
-    }
+    /// Creates a new empty octets builder with a suggested initial size.
+    ///
+    /// The builder may or may not use the size provided by `capacity` as the
+    /// initial size of the buffer. It may very well be possibly that the
+    /// builder is never able to grow to this capacity at all. Therefore,
+    /// even if you create a builder for your data size via this function,
+    /// appending may still fail.
+    fn with_capacity(capacity: usize) -> Self;
 }
 
 #[cfg(feature = "std")]
@@ -76,10 +77,19 @@ impl OctetsBuilder for Vec<u8> {
     type AppendError = Infallible;
 
     fn append_slice(
-        &mut self, slice: &[u8]
+        &mut self,
+        slice: &[u8],
     ) -> Result<(), Self::AppendError> {
         self.extend_from_slice(slice);
         Ok(())
+    }
+
+    fn empty() -> Self {
+        Vec::new()
+    }
+
+    fn with_capacity(capacity: usize) -> Self {
+        Vec::with_capacity(capacity)
     }
 }
 
@@ -88,18 +98,26 @@ impl<'a> OctetsBuilder for Cow<'a, [u8]> {
     type AppendError = Infallible;
 
     fn append_slice(
-        &mut self, slice: &[u8]
+        &mut self,
+        slice: &[u8],
     ) -> Result<(), Self::AppendError> {
         if let Cow::Owned(ref mut vec) = *self {
             vec.extend_from_slice(slice);
         } else {
-            let mut vec = std::mem::replace(
-                self, Cow::Borrowed(b"")
-            ).into_owned();
+            let mut vec =
+                std::mem::replace(self, Cow::Borrowed(b"")).into_owned();
             vec.extend_from_slice(slice);
             *self = Cow::Owned(vec);
         }
         Ok(())
+    }
+
+    fn empty() -> Self {
+        Cow::Borrowed(b"")
+    }
+
+    fn with_capacity(capacity: usize) -> Self {
+        Cow::Owned(Vec::with_capacity(capacity))
     }
 }
 
@@ -108,10 +126,19 @@ impl OctetsBuilder for BytesMut {
     type AppendError = Infallible;
 
     fn append_slice(
-        &mut self, slice: &[u8]
+        &mut self,
+        slice: &[u8],
     ) -> Result<(), Self::AppendError> {
         self.extend_from_slice(slice);
         Ok(())
+    }
+
+    fn empty() -> Self {
+        BytesMut::new()
+    }
+
+    fn with_capacity(capacity: usize) -> Self {
+        BytesMut::with_capacity(capacity)
     }
 }
 
@@ -120,10 +147,19 @@ impl<A: smallvec::Array<Item = u8>> OctetsBuilder for smallvec::SmallVec<A> {
     type AppendError = Infallible;
 
     fn append_slice(
-        &mut self, slice: &[u8]
+        &mut self,
+        slice: &[u8],
     ) -> Result<(), Self::AppendError> {
         self.extend_from_slice(slice);
         Ok(())
+    }
+
+    fn empty() -> Self {
+        smallvec::SmallVec::new()
+    }
+
+    fn with_capacity(capacity: usize) -> Self {
+        smallvec::SmallVec::with_capacity(capacity)
     }
 }
 
@@ -132,12 +168,22 @@ impl<const N: usize> OctetsBuilder for heapless::Vec<u8, N> {
     type AppendError = ShortBuf;
 
     fn append_slice(
-        &mut self, slice: &[u8]
+        &mut self,
+        slice: &[u8],
     ) -> Result<(), Self::AppendError> {
         self.extend_from_slice(slice).map_err(|_| ShortBuf)
     }
-}
 
+    fn empty() -> Self {
+        heapless::Vec::new()
+    }
+
+    fn with_capacity(capacity: usize) -> Self {
+        debug_assert!(capacity <= N);
+        // Ignore the capacity because that's determined by the type
+        heapless::Vec::new()
+    }
+}
 
 //------------ Truncate ------------------------------------------------------
 
@@ -207,70 +253,6 @@ impl<const N: usize> Truncate for heapless::Vec<u8, N> {
         self.truncate(len)
     }
 }
-
-
-//------------ EmptyBuilder --------------------------------------------------
-
-/// An octets builder that can be newly created empty.
-pub trait EmptyBuilder {
-    /// Creates a new empty octets builder with a default size.
-    fn empty() -> Self;
-
-    /// Creates a new empty octets builder with a suggested initial size.
-    ///
-    /// The builder may or may not use the size provided by `capacity` as the
-    /// initial size of the buffer. It may very well be possibly that the
-    /// builder is never able to grow to this capacity at all. Therefore,
-    /// even if you create a builder for your data size via this function,
-    /// appending may still fail.
-    fn with_capacity(capacity: usize) -> Self;
-}
-
-#[cfg(feature = "std")]
-impl EmptyBuilder for Vec<u8> {
-    fn empty() -> Self {
-        Vec::new()
-    }
-
-    fn with_capacity(capacity: usize) -> Self {
-        Vec::with_capacity(capacity)
-    }
-}
-
-#[cfg(feature = "bytes")]
-impl EmptyBuilder for BytesMut {
-    fn empty() -> Self {
-        BytesMut::new()
-    }
-
-    fn with_capacity(capacity: usize) -> Self {
-        BytesMut::with_capacity(capacity)
-    }
-}
-
-#[cfg(feature = "smallvec")]
-impl<A: smallvec::Array<Item = u8>> EmptyBuilder for smallvec::SmallVec<A> {
-    fn empty() -> Self {
-        smallvec::SmallVec::new()
-    }
-
-    fn with_capacity(capacity: usize) -> Self {
-        smallvec::SmallVec::with_capacity(capacity)
-    }
-}
-
-#[cfg(feature = "heapless")]
-impl<const N: usize> EmptyBuilder for heapless::Vec<u8, N> {
-    fn empty() -> Self {
-        Self::new()
-    }
-
-    fn with_capacity(capacity: usize) -> Self {
-        debug_assert!(capacity <= N);
-        Self::with_capacity(capacity)
-    }
-}
-
 
 //------------ FreezeBuilder -------------------------------------------------
 

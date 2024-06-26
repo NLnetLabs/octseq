@@ -48,7 +48,6 @@ impl<Octets> Str<Octets> {
     ) -> Result<Self, BuilderAppendError<Octets>>
     where
         Octets: FromBuilder,
-        <Octets as FromBuilder>::Builder: EmptyBuilder,
     {
         let mut res = <Octets as FromBuilder>::Builder::with_capacity(s.len());
         res.append_slice(s.as_bytes())?;
@@ -63,7 +62,6 @@ impl<Octets> Str<Octets> {
     pub fn copy_from_str(s: &str) -> Self
     where
         Octets: FromBuilder,
-        <Octets as FromBuilder>::Builder: EmptyBuilder,
         <<Octets as FromBuilder>::Builder as OctetsBuilder>::AppendError:
             Into<Infallible>,
     {
@@ -289,13 +287,17 @@ pub struct StrBuilder<Octets>(Octets);
 impl<Octets> StrBuilder<Octets> {
     /// Creates a new, empty string builder.
     pub fn new() -> Self
-    where Octets: EmptyBuilder {
+    where
+        Octets: OctetsBuilder,
+    {
         StrBuilder(Octets::empty())
     }
 
     /// Creates a new, empty string builder with a given minimum capacity.
     pub fn with_capacity(capacity: usize) -> Self
-    where Octets: EmptyBuilder {
+    where
+        Octets: OctetsBuilder,
+    {
         StrBuilder(Octets::with_capacity(capacity))
     }
 
@@ -321,9 +323,11 @@ impl<Octets> StrBuilder<Octets> {
     /// If the content is UTF-8 encoded, it will remain unchanged. Otherwise,
     /// a new builder is created and the passed builder is dropped.
     pub fn try_from_utf8_lossy(
-        octets: Octets
+        octets: Octets,
     ) -> Result<Self, Octets::AppendError>
-    where Octets: AsRef<[u8]> + OctetsBuilder + EmptyBuilder {
+    where
+        Octets: AsRef<[u8]> + OctetsBuilder,
+    {
         const REPLACEMENT_CHAR: &[u8] = &[239, 191, 189];
 
         let mut err = match str::from_utf8(octets.as_ref()) {
@@ -354,8 +358,8 @@ impl<Octets> StrBuilder<Octets> {
 
     pub fn from_utf8_lossy(octets: Octets) -> Self
     where
-        Octets: AsRef<[u8]> + OctetsBuilder + EmptyBuilder,
-        Octets::AppendError: Into<Infallible>
+        Octets: AsRef<[u8]> + OctetsBuilder,
+        Octets::AppendError: Into<Infallible>,
     {
         infallible(Self::try_from_utf8_lossy(octets))
     }
@@ -479,7 +483,7 @@ impl<Octets> StrBuilder<Octets> {
 
 //-- Default
 
-impl<Octets: EmptyBuilder> Default for StrBuilder<Octets> {
+impl<Octets: OctetsBuilder> Default for StrBuilder<Octets> {
     fn default() -> Self {
         Self::new()
     }

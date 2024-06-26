@@ -31,7 +31,7 @@ where
     Octs::deserialize_octets(deserializer)
 }
 
-//------------ OctetsSerializer --------------------------------------------
+//------------ AsSerializedOctets --------------------------------------------
 
 /// A wrapper forcing a value to serialize through its octets.
 ///

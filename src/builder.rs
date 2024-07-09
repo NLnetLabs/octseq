@@ -267,7 +267,8 @@ impl<const N: usize> EmptyBuilder for heapless::Vec<u8, N> {
 
     fn with_capacity(capacity: usize) -> Self {
         debug_assert!(capacity <= N);
-        Self::with_capacity(capacity)
+        // Ignore the capacity because that's determined by the type
+        heapless::Vec::new()
     }
 }
 

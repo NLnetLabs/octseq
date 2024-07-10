@@ -11,9 +11,13 @@ New
 
 Bug fixes
 
+* Fixed an infinite loop in the `OctetsBuilder::with_capacity` impl for
+  `heapless::Vec<..>`. ([#59])
+
 Other changes
 
 [#56]: https://github.com/NLnetLabs/octseq/pull/56
+[#59]: https://github.com/NLnetLabs/octseq/pull/59
 
 
 ## 0.5.1

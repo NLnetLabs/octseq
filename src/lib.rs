@@ -3,7 +3,7 @@
 //! This crate provides a set of basic traits that allow defining types that
 //! are generic over a variable length sequence of octets (or, vulgo: bytes).
 //!
-//! There are two groups of traits: those that represent behavior of imutable
+//! There are two groups of traits: those that represent behavior of immutable
 //! octets sequences are collected in the module _[octets]_ and those for
 //! building such sequences are in _[builder]_. Most traits from these modules
 //! are also re-exported at the crate root for convenience.
@@ -23,7 +23,7 @@
 //!
 //! * The _[mod@array]_ module provides an octets builder backed by an octets
 //!   array.
-//! * The _[mod@str]_ module provides both imutable and buildable string types
+//! * The _[mod@str]_ module provides both immutable and buildable string types
 //!   that are generic over the octets sequence they wrap.
 //! * The
 #![cfg_attr(feature = "serde", doc = "  _[serde]_")]

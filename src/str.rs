@@ -1,8 +1,8 @@
 //! Strings atop octet sequences.
 //!
-//! This module provides the type `Str<Octets>` that guarantees the same
+//! This module provides the type [`Str<Octets>`] that guarantees the same
 //! invariants – namely that the content is an UTF-8 encoded string – as
-//! the standard library’s `str` and `String` types but atop a generic
+//! the standard library’s [`str`] and [`String`] types but atop a generic
 //! octet sequence.
 
 use core::{borrow, cmp, fmt, hash, ops, str};
@@ -42,7 +42,7 @@ impl<Octets> Str<Octets> {
         Self(octets)
     }
 
-    /// Creates a value by copying the content of a `str`.
+    /// Creates a value by copying the content of a [`str`].
     pub fn try_copy_from_str(
         s: &str
     ) -> Result<Self, BuilderAppendError<Octets>>
@@ -55,7 +55,7 @@ impl<Octets> Str<Octets> {
         Ok(unsafe { Self::from_utf8_unchecked(res.freeze()) })
     }
 
-    /// Creates a value by copying the content of a `str`.
+    /// Creates a value by copying the content of a [`str`].
     ///
     /// This function is identical to
     /// [`try_copy_from_str`][Self::try_copy_from_str] for octets types

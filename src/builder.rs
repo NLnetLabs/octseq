@@ -219,7 +219,7 @@ pub trait EmptyBuilder {
     /// Creates a new empty octets builder with a suggested initial size.
     ///
     /// The builder may or may not use the size provided by `capacity` as the
-    /// initial size of the buffer. It may very well be possibly that the
+    /// initial size of the buffer. It may very well be possible that the
     /// builder is never able to grow to this capacity at all. Therefore,
     /// even if you create a builder for your data size via this function,
     /// appending may still fail.
@@ -275,12 +275,12 @@ impl<const N: usize> EmptyBuilder for heapless::Vec<u8, N> {
 
 //------------ FreezeBuilder -------------------------------------------------
 
-/// An octets builder that can be frozen into a imutable octets sequence.
+/// An octets builder that can be frozen into a immutable octets sequence.
 pub trait FreezeBuilder {
     /// The type of octets sequence to builder will be frozen into.
     type Octets;
 
-    /// Converts the octets builder into an imutable octets sequence.
+    /// Converts the octets builder into an immutable octets sequence.
     fn freeze(self) -> Self::Octets;
 }
 

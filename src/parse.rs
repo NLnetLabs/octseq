@@ -12,11 +12,9 @@ use crate::octets::Octets;
 
 /// A parser for sequentially extracting data from an octets sequence.
 ///
-/// The parser wraps an [octets reference] and remembers the read position on
+/// The parser wraps an [Octets] reference and remembers the read position on
 /// the referenced sequence. Methods allow reading out data and progressing
 /// the position beyond processed data.
-///
-/// [octets reference]: trait.OctetsRef.html
 #[derive(Debug)]
 pub struct Parser<'a, Octs: ?Sized> {
     /// The underlying octets reference.
@@ -26,10 +24,6 @@ pub struct Parser<'a, Octs: ?Sized> {
     pos: usize,
 
     /// The length of the octets sequence.
-    ///
-    /// This starts out as the length of the underlying sequence and is kept
-    /// here to be able to temporarily limit the allowed length for
-    /// `parse_blocks`.
     len: usize,
 }
 
@@ -136,9 +130,7 @@ impl<'a, Octs: ?Sized> Parser<'a, Octs> {
     /// Returns the length of the underlying octet sequence.
     ///
     /// This is _not_ the number of octets left for parsing. Use
-    /// [`remaining`] for that.
-    ///
-    /// [`remaining`]: #method.remaining
+    /// [`Parser::remaining`] for that.
     pub fn len(&self) -> usize {
         self.len
     }
@@ -164,9 +156,7 @@ impl<'a, Octs: AsRef<[u8]> + ?Sized> Parser<'a, Octs> {
     /// Returns an octets slice of the underlying sequence.
     ///
     /// The slice covers the entire sequence, not just the remaining data. You
-    /// can use [`peek`] for that.
-    ///
-    /// [`peek`]: #method.peek
+    /// can use [`Parser::peek`] for that.
     pub fn as_slice(&self) -> &[u8] {
         &self.octets.as_ref()[..self.len]
     }

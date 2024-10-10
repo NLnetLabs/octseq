@@ -257,24 +257,14 @@ impl<const N: usize> fmt::Debug for Array<N> {
     }
 }
 
-
-//--- SerializeOctets and DeserializeOctets
-
-#[cfg(feature = "serde")]
-impl<const N: usize> crate::serde::SerializeOctets for Array<N> {
-    fn serialize_octets<S: serde::Serializer>(
-        &self, serializer: S
-    ) -> Result<S::Ok, S::Error> {
-        serializer.serialize_bytes(self.as_ref())
-    }
-}
+//--- DeserializeOctets
 
 #[cfg(feature = "serde")]
 impl<'de, const N: usize> crate::serde::DeserializeOctets<'de> for Array<N> {
     type Visitor = ArrayVisitor<N>;
 
     fn deserialize_octets<D: serde::Deserializer<'de>>(
-        deserializer: D
+        deserializer: D,
     ) -> Result<Self, D::Error> {
         Self::visitor().deserialize(deserializer)
     }

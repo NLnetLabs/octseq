@@ -42,7 +42,7 @@ impl<const N: usize> Array<N> {
     ///
     /// Returns an error if `new_len` is larger than the array size.
     pub fn resize_raw(&mut self, new_len: usize) -> Result<(), ShortBuf> {
-        if new_len >= N {
+        if new_len > N {
             Err(ShortBuf)
         }
         else {

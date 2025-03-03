@@ -8,7 +8,13 @@ New
 
 Bug fixes
 
+* Fix `Array::resize_raw` to allow resizing to the length of the array.
+  ([#63] by [@edmonds])
+
 Other
+
+[#63]: https://github.com/NLnetLabs/octseq/pull/56
+[@edmonds]: https://github.com/edmonds
 
 
 ## 0.5.2

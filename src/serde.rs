@@ -20,7 +20,7 @@ pub trait SerializeOctets {
         &self, serializer: S
     ) -> Result<S::Ok, S::Error>;
 
-    fn as_serialized_octets(&self) -> AsSerializedOctets<Self> {
+    fn as_serialized_octets(&self) -> AsSerializedOctets<'_, Self> {
         AsSerializedOctets(self)
     }
 }

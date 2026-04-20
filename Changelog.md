@@ -4,6 +4,8 @@
 
 Breaking changes
 
+* Upgraded [heapless] to 0.9. ([#65])
+
 New
 
 Bug fixes
@@ -13,8 +15,13 @@ Bug fixes
 
 Other
 
-[#63]: https://github.com/NLnetLabs/octseq/pull/56
+* Upgraded minimum supported Rust version to 1.87. ([#66])
+
+[#63]: https://github.com/NLnetLabs/octseq/pull/63
+[#65]: https://github.com/NLnetLabs/octseq/pull/65
+[#66]: https://github.com/NLnetLabs/octseq/pull/66
 [@edmonds]: https://github.com/edmonds
+[heapless]: https://crates.io/crates/heapless
 
 
 ## 0.5.2

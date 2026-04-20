@@ -1,12 +1,12 @@
 # Changelog
 
-## Unreleased next version
+## 0.6.0
+
+Released 2026-04-20.
 
 Breaking changes
 
 * Upgraded [heapless] to 0.9. ([#65])
-
-New
 
 Bug fixes
 

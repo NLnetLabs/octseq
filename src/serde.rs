@@ -41,8 +41,8 @@ impl<'a> SerializeOctets for &'a [u8] {
     }
 }
 
-#[cfg(feature = "std")]
-impl<'a> SerializeOctets for std::borrow::Cow<'a, [u8]> {
+#[cfg(feature = "alloc")]
+impl<'a> SerializeOctets for alloc::borrow::Cow<'a, [u8]> {
     fn serialize_octets<S: serde::Serializer>(
         &self, serializer: S
     ) -> Result<S::Ok, S::Error> {
@@ -50,8 +50,8 @@ impl<'a> SerializeOctets for std::borrow::Cow<'a, [u8]> {
     }
 }
 
-#[cfg(feature = "std")]
-impl SerializeOctets for std::vec::Vec<u8> {
+#[cfg(feature = "alloc")]
+impl SerializeOctets for alloc::vec::Vec<u8> {
     fn serialize_octets<S: serde::Serializer>(
         &self, serializer: S
     ) -> Result<S::Ok, S::Error> {
@@ -153,8 +153,8 @@ impl<'de> DeserializeOctets<'de> for &'de [u8] {
     }
 }
 
-#[cfg(feature = "std")]
-impl<'de> DeserializeOctets<'de> for std::borrow::Cow<'de, [u8]> {
+#[cfg(feature = "alloc")]
+impl<'de> DeserializeOctets<'de> for alloc::borrow::Cow<'de, [u8]> {
     type Visitor = BorrowedVisitor<Self>;
 
     fn deserialize_octets<D: serde::Deserializer<'de>>(
@@ -179,8 +179,8 @@ impl<'de> DeserializeOctets<'de> for std::borrow::Cow<'de, [u8]> {
     }
 }
 
-#[cfg(feature = "std")]
-impl<'de> DeserializeOctets<'de> for std::vec::Vec<u8> {
+#[cfg(feature = "alloc")]
+impl<'de> DeserializeOctets<'de> for alloc::vec::Vec<u8> {
     type Visitor = BufVisitor<Self>;
 
     fn deserialize_octets<D: serde::Deserializer<'de>>(
@@ -326,10 +326,10 @@ where
 
 //------------ BufVisitor ------------------------------------------------
 
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 pub struct BufVisitor<T>(PhantomData<T>);
 
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 impl<T> BufVisitor<T> {
     fn new() -> Self {
         BufVisitor(PhantomData)
@@ -340,16 +340,16 @@ impl<T> BufVisitor<T> {
         deserializer: D,
     ) -> Result<T, D::Error>
     where
-        T: From<std::vec::Vec<u8>>,
+        T: From<alloc::vec::Vec<u8>>,
     {
         deserializer.deserialize_byte_buf(self)
     }
 }
 
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 impl<'de, T> serde::de::Visitor<'de> for BufVisitor<T>
 where
-    T: From<std::vec::Vec<u8>>,
+    T: From<alloc::vec::Vec<u8>>,
 {
     type Value = T;
 
@@ -361,12 +361,12 @@ where
         self,
         value: &'de [u8],
     ) -> Result<Self::Value, E> {
-        Ok(std::vec::Vec::from(value).into())
+        Ok(alloc::vec::Vec::from(value).into())
     }
 
     fn visit_byte_buf<E: serde::de::Error>(
         self,
-        value: std::vec::Vec<u8>,
+        value: alloc::vec::Vec<u8>,
     ) -> Result<Self::Value, E> {
         Ok(value.into())
     }

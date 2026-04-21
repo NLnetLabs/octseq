@@ -23,9 +23,8 @@
 use core::fmt;
 use core::convert::Infallible;
 #[cfg(feature = "bytes")] use bytes::{Bytes, BytesMut};
-#[cfg(feature = "std")] use std::borrow::Cow;
-#[cfg(feature = "std")] use std::vec::Vec;
-
+#[cfg(feature = "alloc")] use alloc::borrow::Cow;
+#[cfg(feature = "alloc")] use alloc::vec::Vec;
 
 //------------ OctetsBuilder -------------------------------------------------
 
@@ -71,7 +70,7 @@ impl<'a, T: OctetsBuilder> OctetsBuilder for &'a mut T {
     }
 }
 
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 impl OctetsBuilder for Vec<u8> {
     type AppendError = Infallible;
 
@@ -83,7 +82,7 @@ impl OctetsBuilder for Vec<u8> {
     }
 }
 
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 impl<'a> OctetsBuilder for Cow<'a, [u8]> {
     type AppendError = Infallible;
 
@@ -93,7 +92,7 @@ impl<'a> OctetsBuilder for Cow<'a, [u8]> {
         if let Cow::Owned(ref mut vec) = *self {
             vec.extend_from_slice(slice);
         } else {
-            let mut vec = std::mem::replace(
+            let mut vec = core::mem::replace(
                 self, Cow::Borrowed(b"")
             ).into_owned();
             vec.extend_from_slice(slice);
@@ -163,7 +162,7 @@ impl<'a> Truncate for &'a [u8] {
     }
 }
 
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 impl<'a> Truncate for Cow<'a, [u8]> {
     fn truncate(&mut self, len: usize) {
         match *self {
@@ -173,7 +172,7 @@ impl<'a> Truncate for Cow<'a, [u8]> {
     }
 }
 
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 impl Truncate for Vec<u8> {
     fn truncate(&mut self, len: usize) {
         self.truncate(len)
@@ -226,7 +225,7 @@ pub trait EmptyBuilder {
     fn with_capacity(capacity: usize) -> Self;
 }
 
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 impl EmptyBuilder for Vec<u8> {
     fn empty() -> Self {
         Vec::new()
@@ -284,7 +283,7 @@ pub trait FreezeBuilder {
     fn freeze(self) -> Self::Octets;
 }
 
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 impl FreezeBuilder for Vec<u8> {
     type Octets = Self;
 
@@ -293,7 +292,7 @@ impl FreezeBuilder for Vec<u8> {
     }
 }
 
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 impl<'a> FreezeBuilder for Cow<'a, [u8]> {
     type Octets = Self;
 
@@ -341,7 +340,7 @@ pub trait IntoBuilder {
     fn into_builder(self) -> Self::Builder;
 }
 
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 impl IntoBuilder for Vec<u8> {
     type Builder = Self;
 
@@ -350,7 +349,7 @@ impl IntoBuilder for Vec<u8> {
     }
 }
 
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 impl<'a> IntoBuilder for &'a [u8] {
     type Builder = Vec<u8>;
 
@@ -359,7 +358,7 @@ impl<'a> IntoBuilder for &'a [u8] {
     }
 }
 
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 impl<'a> IntoBuilder for Cow<'a, [u8]> {
     type Builder = Self;
 
@@ -410,7 +409,7 @@ pub trait FromBuilder: AsRef<[u8]> + Sized {
     fn from_builder(builder: Self::Builder) -> Self;
 }
 
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 impl FromBuilder for Vec<u8> {
     type Builder = Self;
 
@@ -419,7 +418,7 @@ impl FromBuilder for Vec<u8> {
     }
 }
 
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 impl<'a> FromBuilder for Cow<'a, [u8]> {
     type Builder = Self;
 
@@ -498,8 +497,7 @@ impl fmt::Display for ShortBuf {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for ShortBuf {}
+impl core::error::Error for ShortBuf {}
 
 
 //------------ Functions for Infallible --------------------------------------

@@ -499,8 +499,7 @@ impl fmt::Display for ShortInput {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for ShortInput {}
+impl core::error::Error for ShortInput {}
 
 
 //============ Testing =======================================================

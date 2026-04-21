@@ -15,8 +15,8 @@
 use core::convert::Infallible;
 use core::ops::{Index, RangeBounds};
 #[cfg(feature = "bytes")] use bytes::{Bytes, BytesMut};
-#[cfg(feature = "std")] use std::borrow::Cow;
-#[cfg(feature = "std")] use std::vec::Vec;
+#[cfg(feature = "alloc")] use alloc::borrow::Cow;
+#[cfg(feature = "alloc")] use alloc::vec::Vec;
 use crate::builder::ShortBuf;
 
 
@@ -59,7 +59,7 @@ impl Octets for [u8] {
     }
 }
 
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 impl<'c> Octets for Cow<'c, [u8]> {
     type Range<'a> = &'a [u8] where Self: 'a;
 
@@ -68,7 +68,7 @@ impl<'c> Octets for Cow<'c, [u8]> {
     }
 }
 
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 impl Octets for Vec<u8> {
     type Range<'a> = &'a [u8];
 
@@ -77,8 +77,8 @@ impl Octets for Vec<u8> {
     }
 }
 
-#[cfg(feature = "std")]
-impl Octets for std::sync::Arc<[u8]> {
+#[cfg(feature = "alloc")]
+impl Octets for alloc::sync::Arc<[u8]> {
     type Range<'a> = &'a [u8];
 
     fn range(&self, range: impl RangeBounds<usize>) -> Self::Range<'_> {
@@ -151,7 +151,7 @@ impl<'a, Source: AsRef<[u8]> + 'a> OctetsFrom<&'a Source> for &'a [u8] {
     }
 }
 
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 impl<Source> OctetsFrom<Source> for Vec<u8>
 where
     Self: From<Source>,

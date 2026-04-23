@@ -14,12 +14,13 @@ license = "BSD-3-Clause"
 [dependencies]
 bytes    = { version = "1", optional = true, default-features = false }
 heapless = { version = "0.9", optional = true }
-serde    = { version = "1", optional = true }
+serde    = { version = "1", optional = true, default-features = false }
 smallvec = { version = "1", optional = true }
 
 [features]
 default = ["std"]
-std     = ["bytes?/std"]
+alloc   = ["serde?/alloc"]
+std     = ["alloc", "bytes?/std", "serde?/std"]
 
 [package.metadata.docs.rs]
 all-features = true

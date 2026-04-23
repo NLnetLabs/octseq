@@ -8,10 +8,13 @@ New
 
 Improvements
 
+* Made proper use of `no_std` and `alloc`. ([#68])
+
 Bug fixes
 
 Other
 
+[#68]: https://github.com/NLnetLabs/octseq/pull/68
 
 ## 0.6.0
 

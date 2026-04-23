@@ -11,7 +11,7 @@
 //! These traits are implemented for a number of types. Apart from `[u8]`,
 //! the implementations are opt-in via features. These are:
 //!
-//! * `std` for `Vec<u8>`, `Cow<[u8]>`, and `Arc<[u8]>`,
+//! * `alloc` for `Vec<u8>`, `Cow<[u8]>`, and `Arc<[u8]>`,
 //! * `bytes` for the `Bytes` and `BytesMut` types from the
 //!   [bytes](https://crates.io/crates/bytes) crate,
 //! * `heapless` for the `Vec<u8, N>` type from the
@@ -36,6 +36,9 @@
 #![allow(renamed_and_removed_lints)]
 #![allow(clippy::unknown_clippy_lints)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
+
+#[cfg(feature = "alloc")]
+extern crate alloc;
 
 pub use self::array::Array;
 pub use self::builder::{

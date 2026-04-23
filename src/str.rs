@@ -89,9 +89,9 @@ impl Str<[u8]> {
     }
 }
 
-#[cfg(feature = "std")]
-impl Str<std::vec::Vec<u8>> {
-    pub fn from_string(s: std::string::String) -> Self {
+#[cfg(feature = "alloc")]
+impl Str<alloc::vec::Vec<u8>> {
+    pub fn from_string(s: alloc::string::String) -> Self {
         unsafe { Self::from_utf8_unchecked(s.into_bytes()) }
     }
 }
@@ -631,8 +631,7 @@ impl<Octets> fmt::Display for FromUtf8Error<Octets> {
     }
 }
 
-#[cfg(feature = "std")]
-impl<Octets> std::error::Error for FromUtf8Error<Octets> {}
+impl<Octets> core::error::Error for FromUtf8Error<Octets> {}
 
 
 //============ Testing =======================================================
@@ -645,12 +644,12 @@ mod test {
     // of the Rust standard library.
 
     #[test]
-    #[cfg(feature = "std")]
+    #[cfg(feature = "alloc")]
     fn from_utf8_lossy() {
         fn check(src: impl AsRef<[u8]>) {
             assert_eq!(
-                StrBuilder::from_utf8_lossy(std::vec::Vec::from(src.as_ref())),
-                std::string::String::from_utf8_lossy(src.as_ref())
+                StrBuilder::from_utf8_lossy(alloc::vec::Vec::from(src.as_ref())),
+                alloc::string::String::from_utf8_lossy(src.as_ref())
             );
         }
 
@@ -666,9 +665,9 @@ mod test {
     }
 
     #[test]
-    #[cfg(feature = "std")]
+    #[cfg(feature = "alloc")]
     fn push_str() {
-        let mut s = StrBuilder::<std::vec::Vec<u8>>::new();
+        let mut s = StrBuilder::<alloc::vec::Vec<u8>>::new();
         s.push_str("");
         assert_eq!(&s[0..], "");
         s.push_str("abc");
@@ -678,10 +677,10 @@ mod test {
     }
 
     #[test]
-    #[cfg(feature = "std")]
+    #[cfg(feature = "alloc")]
     fn push() {
         let mut data = StrBuilder::from_utf8(
-            std::vec::Vec::from("ประเทศไทย中".as_bytes())
+            alloc::vec::Vec::from("ประเทศไทย中".as_bytes())
         ).unwrap();
         data.push('华');
         data.push('b'); // 1 byte
@@ -692,10 +691,10 @@ mod test {
     }
 
     #[test]
-    #[cfg(feature = "std")]
+    #[cfg(feature = "alloc")]
     fn pop() {
         let mut data = StrBuilder::from_utf8(
-            std::vec::Vec::from("ประเทศไทย中华b¢€𤭢".as_bytes())
+            alloc::vec::Vec::from("ประเทศไทย中华b¢€𤭢".as_bytes())
         ).unwrap();
         assert_eq!(data.pop().unwrap(), '𤭢'); // 4 bytes
         assert_eq!(data.pop().unwrap(), '€'); // 3 bytes

@@ -1,20 +1,17 @@
 # Changelog
 
-## Unreleased next version
+## 0.6.1
 
-Breaking changes
-
-New
+Released 2026-04-24.
 
 Improvements
 
-* Made proper use of `no_std` and `alloc`. ([#68])
-
-Bug fixes
-
-Other
+* Introduced a new feature `alloc` that only uses the `alloc` module of
+  the standard library. The existing `std` feature implies `alloc` and is
+  still the default. ([#68])
 
 [#68]: https://github.com/NLnetLabs/octseq/pull/68
+
 
 ## 0.6.0
 
